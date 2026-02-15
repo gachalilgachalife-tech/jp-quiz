@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JP Quiz</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="brand-title">JP Quiz</span>
+      <span class="chip">Phase 1</span>
+    </div>
+
+    <div class="top-actions">
+      <button id="themeToggle" class="btn secondary" type="button">🌙 / ☀️</button>
+      <button id="fullscreenBtn" class="btn secondary" type="button">Plein écran</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card center">
+      <h1 class="title">Quiz Japonais</h1>
+      <p class="sub">
+        Objectif : apprendre vite tes kana grâce aux modes Normal et Infini, tout en t'amusant.
+        <br/>Choisis un mode :
+      </p>
+
+      <div id="lastStats" class="stats" style="display:none;"></div>
+
+      <div class="actions">
+        <a class="btn primary" href="./quiz.html?mode=normal">Mode normal (10)</a>
+        <a class="btn primary" href="./quiz.html?mode=infini">Mode infini (objectif 100)</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">Progression</div>
+          <div class="panel-body">
+            <div class="kpi"><span>Niveau</span><strong id="level">—</strong></div>
+            <div class="kpi"><span>XP</span><strong id="xp">—</strong></div>
+            <div class="kpi"><span>Meilleure streak</span><strong id="bestStreak">—</strong></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Badges</div>
+          <div class="panel-body" id="badges">
+            <!-- chips -->
+          </div>
+        </div>
+      </div>
+
+      <p class="hint">
+        Astuce : tu peux aussi utiliser F11. Le bouton “Plein écran” marche si le navigateur l’autorise.
+      </p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { loadState, saveState, applyTheme, toggleTheme, requestFullscreenToggle } from "./assets/app.js";
+
+    const state = loadState();
+    applyTheme(state.ui.theme);
+
+    // UI
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const s = loadState();
+      s.ui.theme = (s.ui.theme === "dark") ? "light" : "dark";
+      saveState(s);
+      applyTheme(s.ui.theme);
+    });
+
+    document.getElementById("fullscreenBtn").addEventListener("click", requestFullscreenToggle);
+
+    // Stats menu
+    const lastStats = document.getElementById("lastStats");
+    const lines = [];
+    if (state.last.normalScore !== null) lines.push(`Dernier score (Normal) : ${state.last.normalScore}/10`);
+    if (state.last.infiniteQuestionsFor100 !== null) {
+      lines.push(`Dernière perf (Infini) : 100 bonnes réponses en ${state.last.infiniteQuestionsFor100} questions`);
+    }
+    if (lines.length) {
+      lastStats.style.display = "block";
+      lastStats.textContent = lines.join("\n");
+    }
+
+    // Progression
+    document.getElementById("level").textContent = state.profile.level;
+    document.getElementById("xp").textContent = state.profile.xp;
+    document.getElementById("bestStreak").textContent = state.profile.bestStreak;
+
+    // Badges
+    const badgesEl = document.getElementById("badges");
+    const badgeList = state.profile.badges;
+    if (!badgeList.length) {
+      badgesEl.innerHTML = `<span class="muted">Aucun badge pour l’instant. Lance une session 👀</span>`;
+    } else {
+      badgesEl.innerHTML = badgeList.map(b => `<span class="badge">${b}</span>`).join("");
+    }
+  </script>
+</body>
+</html>

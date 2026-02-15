@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JP Quiz — Session</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="brand-title">JP Quiz</span>
+      <span id="modeChip" class="chip">—</span>
+    </div>
+
+    <div class="top-actions">
+      <button id="themeToggle" class="btn secondary" type="button">🌙 / ☀️</button>
+      <button id="fullscreenBtn" class="btn secondary" type="button">Plein écran</button>
+      <a class="btn secondary" href="./index.html">Menu</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card quiz">
+      <div class="hud">
+        <div class="hud-left">
+          <div class="hud-score" id="hudScore">—</div>
+          <div class="hud-mini" id="hudMini">—</div>
+        </div>
+        <div class="hud-right">
+          <div class="hud-xp" id="hudXP">XP +0</div>
+          <div class="hud-streak" id="hudStreak">Streak 0</div>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="prompt" id="prompt">—</div>
+
+      <div class="answer">
+        <div class="input-row" id="inputRow" style="display:none;">
+          <input id="romajiInput" type="text" autocomplete="off" spellcheck="false" />
+          <span id="capsIndicator" class="caps">CAPS</span>
+        </div>
+
+        <div class="qcm" id="qcmRow" style="display:none;"></div>
+
+        <div class="hint" id="hint">Entrée pour valider.</div>
+      </div>
+
+      <div class="footer">
+        <button id="btnStop" class="btn secondary" type="button">Arrêter la session</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { HIRAGANA, KATAKANA } from "./assets/data.js";
+    import {
+      loadState, saveState, applyTheme, requestFullscreenToggle,
+      chooseModePro, pickRandomEntry, buildQcmChoices,
+      awardXPAndBadges, formatHud, setFeedback
+    } from "./assets/app.js";
+
+    // --- init
+    const url = new URL(location.href);
+    const mode = (url.searchParams.get("mode") === "infini") ? "infini" : "normal";
+
+    const modeChip = document.getElementById("modeChip");
+    const themeToggle = document.getElementById("themeToggle");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const btnStop = document.getElementById("btnStop");
+
+    const hudScore = document.getElementById("hudScore");
+    const hudMini = document.getElementById("hudMini");
+    const hudXP = document.getElementById("hudXP");
+    const hudStreak = document.getElementById("hudStreak");
+
+    const feedbackEl = document.getElementById("feedback");
+    const promptEl = document.getElementById("prompt");
+    const inputRow = document.getElementById("inputRow");
+    const romajiInput = document.getElementById("romajiInput");
+    const capsIndicator = document.getElementById("capsIndicator");
+    const qcmRow = document.getElementById("qcmRow");
+    const hintEl = document.getElementById("hint");
+
+    let app = loadState();
+    applyTheme(app.ui.theme);
+
+    themeToggle.addEventListener("click", () => {
+      app = loadState();
+      app.ui.theme = (app.ui.theme === "dark") ? "light" : "dark";
+      saveState(app);
+      applyTheme(app.ui.theme);
+    });
+    fullscreenBtn.addEventListener("click", requestFullscreenToggle);
+
+    modeChip.textContent = (mode === "normal") ? "Mode: Normal" : "Mode: Infini";
+
+    // --- session state
+    const SETTINGS = {
+      normalQuestions: 10,
+      infiniteGoal: 100,
+      autoNextMs: 650,
+      showCorrectOnWrong: true,
+    };
+
+    let session = {
+      mode,
+      good: 0,
+      asked: 0,
+      streak: 0,
+      bestStreakThisSession: 0,
+      lastMode: null,
+      locked: false,
+      correct: null,     // expected exact string
+      modeType: null,    // one of 4
+      kind: null,        // "input" | "qcm"
+    };
+
+    function updateHud(extraXp=0){
+      const out = formatHud(session, SETTINGS);
+      hudScore.textContent = out.score;
+      hudMini.textContent = out.mini;
+      hudXP.textContent = `XP +${extraXp}`;
+      hudStreak.textContent = `Streak ${session.streak}`;
+    }
+
+    function clearAnswerArea(){
+      qcmRow.innerHTML = "";
+      romajiInput.value = "";
+      setFeedback(feedbackEl, "", "");
+    }
+
+    function lock(lock){
+      session.locked = lock;
+      romajiInput.disabled = lock;
+      [...qcmRow.querySelectorAll("button")].forEach(b => b.disabled = lock);
+    }
+
+    // CAPS indicator: browser gives it via keyboard events
+    function updateCaps(e){
+      if (!e || typeof e.getModifierState !== "function") return;
+      const caps = e.getModifierState("CapsLock");
+      capsIndicator.classList.toggle("on", !!caps);
+    }
+    romajiInput.addEventListener("keydown", (e) => {
+      updateCaps(e);
+      if (e.key === "Enter") submit(romajiInput.value.trim(), romajiInput);
+    });
+    romajiInput.addEventListener("keyup", updateCaps);
+    romajiInput.addEventListener("focus", updateCaps);
+
+    btnStop.addEventListener("click", () => stopAndBackToMenu(false));
+
+    function stopAndBackToMenu(isNaturalEnd){
+      // Save menu last results when ending "normally"
+      app = loadState();
+
+      if (session.mode === "normal") {
+        // if natural end, store score; if stop early, store nothing
+        if (isNaturalEnd) app.last.normalScore = session.good;
+      } else {
+        if (isNaturalEnd) app.last.infiniteQuestionsFor100 = session.asked;
+      }
+
+      // Best streak global
+      if (session.bestStreakThisSession > app.profile.bestStreak) {
+        app.profile.bestStreak = session.bestStreakThisSession;
+      }
+
+      saveState(app);
+      location.href = "./index.html";
+    }
+
+    function nextQuestion(){
+      // end conditions
+      if (session.mode === "normal" && session.asked >= SETTINGS.normalQuestions) {
+        stopAndBackToMenu(true);
+        return;
+      }
+      if (session.mode === "infini" && session.good >= SETTINGS.infiniteGoal) {
+        stopAndBackToMenu(true);
+        return;
+      }
+
+      lock(false);
+      clearAnswerArea();
+
+      session.asked += 1;
+      updateHud(0);
+
+      // anti-répétition mode type
+      const type = chooseModePro(session);
+      session.modeType = type;
+
+      if (type === "hira_to_romaji"){
+        const [char, romaji] = pickRandomEntry(HIRAGANA);
+        session.kind = "input";
+        session.correct = romaji;
+        promptEl.textContent = `Romaji de ${char}`;
+        inputRow.style.display = "flex";
+        qcmRow.style.display = "none";
+        hintEl.textContent = "Entrée pour valider.";
+        romajiInput.focus();
+      }
+      else if (type === "kata_to_romaji"){
+        const [char, romaji] = pickRandomEntry(KATAKANA);
+        session.kind = "input";
+        session.correct = romaji;
+        promptEl.textContent = `ROMAJI de ${char}`;
+        inputRow.style.display = "flex";
+        qcmRow.style.display = "none";
+        hintEl.textContent = "Entrée pour valider.";
+        romajiInput.focus();
+      }
+      else if (type === "romaji_to_hira"){
+        const [char, romaji] = pickRandomEntry(HIRAGANA);
+        session.kind = "qcm";
+        session.correct = char;
+        promptEl.textContent = `Hiragana de ${romaji}`;
+        inputRow.style.display = "none";
+        qcmRow.style.display = "grid";
+        hintEl.textContent = "Clique une réponse.";
+        renderQcm(Object.keys(HIRAGANA), char);
+      }
+      else { // romaji_to_kata
+        const [char, romaji] = pickRandomEntry(KATAKANA);
+        session.kind = "qcm";
+        session.correct = char;
+        promptEl.textContent = `Katakana de ${romaji}`;
+        inputRow.style.display = "none";
+        qcmRow.style.display = "grid";
+        hintEl.textContent = "Clique une réponse.";
+        renderQcm(Object.keys(KATAKANA), char);
+      }
+    }
+
+    function renderQcm(allChars, correctChar){
+      qcmRow.innerHTML = "";
+      const choices = buildQcmChoices(allChars, correctChar);
+      choices.forEach(ch => {
+        const b = document.createElement("button");
+        b.className = "btn qcm-btn";
+        b.textContent = ch;
+        b.addEventListener("click", () => submit(ch, b));
+        qcmRow.appendChild(b);
+      });
+    }
+
+    function submit(value, focusEl){
+      if (session.locked) return;
+
+      const ok = (value === session.correct);
+
+      // stats: per-mode + per-kana errors
+      app = loadState();
+
+      // increment asked per mode
+      app.stats.byMode[session.modeType].asked += 1;
+
+      let xpGain = 0;
+
+      if (ok){
+        session.good += 1;
+        session.streak += 1;
+        session.bestStreakThisSession = Math.max(session.bestStreakThisSession, session.streak);
+
+        app.stats.byMode[session.modeType].correct += 1;
+
+        // XP
+        xpGain = 10 + Math.min(session.streak, 10); // streak gives a small bonus
+        const awards = awardXPAndBadges(app, xpGain, { ok:true, session });
+
+        setFeedback(feedbackEl, "good", `✅ Correct`);
+        updateHud(xpGain);
+
+        // badges might update; keep app updated
+        app = awards;
+      } else {
+        session.streak = 0;
+
+        app.stats.byMode[session.modeType].wrong += 1;
+
+        // per-kana wrong tracking
+        // for qcm modes: wrong means "correct char" was missed
+        // for input modes: track by "prompt character"? We don't store it here, so we track by expected answer.
+        // Simpler: only track per-kana for qcm (where correct is a kana char)
+        if (session.kind === "qcm") {
+          app.stats.wrongKana[session.correct] = (app.stats.wrongKana[session.correct] || 0) + 1;
+        }
+
+        const extra = SETTINGS.showCorrectOnWrong ? ` (rép : ${session.correct})` : "";
+        setFeedback(feedbackEl, "bad", `❌ Faux${extra}`);
+        updateHud(0);
+      }
+
+      saveState(app);
+      updateHud(xpGain);
+
+      lock(true);
+      if (focusEl && focusEl.animate){
+        try{ focusEl.animate([{transform:"scale(1)"},{transform:"scale(.98)"},{transform:"scale(1)"}], {duration:140}); }catch{}
+      }
+      setTimeout(nextQuestion, SETTINGS.autoNextMs);
+    }
+
+    // start session
+    updateHud(0);
+    nextQuestion();
+  </script>
+</body>
+</html>
