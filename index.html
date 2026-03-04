@@ -90,19 +90,6 @@
     }
 
     // Progression
-    document.getElementById("level").textContent = state.profile.level;
-    document.getElementById("xp").textContent = state.profile.xp;
-    document.getElementById("bestStreak").textContent = state.profile.bestStreak;
-
-    // Badges
-    const badgesEl = document.getElementById("badges");
-    const badgeList = state.profile.badges;
-    if (!badgeList.length) {
-      badgesEl.innerHTML = `<span class="muted">Aucun badge pour l’instant. Lance une session 👀</span>`;
-    } else {
-      badgesEl.innerHTML = badgeList.map(b => `<span class="badge">${b}</span>`).join("");
-    }
-  </script>
-</body>
-</html>
-
+    document.getElementById("level").textContent = state.progression.level;
+    document.getElementById("xp").textContent = state.progression.xp;
+    document.getElementById("bestStreak").textContent = state.progression.bestStreak;
