@@ -138,7 +138,7 @@
         <div class="hint" id="hint">—</div>
 
         <div class="correction-wrap" id="correctionWrap" style="display:none;">
-          <button id="btnCorrection" class="btn secondary" type="button">Correction</button>
+          <button id="btnCorrection" class="btn secondary" type="button" disabled>Correction</button>
         </div>
 
         <div class="correction-panel" id="correctionPanel">
@@ -162,7 +162,7 @@
 
       <div class="footer" id="footer">
         <button id="btnStop" class="btn secondary" type="button">Arrêter la session</button>
-        <button id="btnNext" class="btn primary" type="button" style="display:none;">Suivant</button>
+        <button id="btnNext" class="btn primary" type="button" style="display:none;" disabled>Suivant</button>
       </div>
 
     </section>
@@ -195,7 +195,7 @@
     // ============================
     const url = new URL(location.href);
     const pack = url.searchParams.get("pack") || "kana";
-    const modeParam = url.searchParams.get("mode"); // pas de default -> menus
+    const modeParam = url.searchParams.get("mode"); // menus si absent
     const rankParam = url.searchParams.get("rank");
 
     const SETTINGS = {
@@ -259,6 +259,7 @@
       saveState(s);
       applyTheme(s.ui.theme);
     });
+
     fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
 
     btnStop?.addEventListener("click", () => location.href = "./index.html");
@@ -282,22 +283,16 @@
 
     function isKanjiPack(){ return session.pack === "kanji"; }
 
-   function lock(v){
-  session.locked = v;
-
-  // on bloque la saisie / le QCM
-  if (romajiInput) romajiInput.disabled = v;
-  [...qcmRow.querySelectorAll("button")].forEach(b => b.disabled = v);
-
-  // ✅ en kanji, après réponse, on veut laisser Correction/Suivant actifs
-  const allowNav = (session.pack === "kanji" && v === true);
-
-  if (btnCorrection) btnCorrection.disabled = v && !allowNav;
-  if (btnNext) btnNext.disabled = v && !allowNav;
-}
+    // ✅ lock bloque uniquement les réponses (PAS les boutons Correction/Suivant)
+    function lock(v){
+      session.locked = v;
+      if (romajiInput) romajiInput.disabled = v;
+      [...qcmRow.querySelectorAll("button")].forEach(b => b.disabled = v);
+    }
 
     function hideCorrection(){
       correctionWrap.style.display = "none";
+      btnCorrection.disabled = true;
       correctionPanel.classList.remove("show");
       session.correctionData = null;
     }
@@ -342,6 +337,9 @@
     romajiInput?.addEventListener("keyup", updateCaps);
     romajiInput?.addEventListener("focus", updateCaps);
 
+    // ============================
+    // ✅ LISTENERS UNE SEULE FOIS
+    // ============================
     btnCorrection?.addEventListener("click", () => {
       if (!session.correctionData) return;
       correctionPanel.classList.toggle("show");
@@ -349,12 +347,14 @@
 
     btnNext?.addEventListener("click", () => {
       btnNext.style.display = "none";
+      btnNext.disabled = true;
+
       lock(false);
       nextQuestion();
     });
 
     // ============================
-    // SHOW MENUS
+    // MENUS
     // ============================
     function hideQuizUI(){
       hud.style.display = "none";
@@ -449,8 +449,9 @@
       lock(true);
       inputRow.style.display = "none";
       qcmRow.style.display = "none";
-      if (btnNext) btnNext.style.display = "none";
       hideCorrection();
+      btnNext.style.display = "none";
+      btnNext.disabled = true;
 
       const passText = (session.mode === "exam")
         ? (((session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate) ? "✅ Examen réussi !" : "❌ Examen raté.")
@@ -476,7 +477,10 @@
     // QUESTIONS
     // ============================
     function nextQuestion(){
-      if (btnNext) btnNext.style.display = "none";
+      // ✅ reset nav/correction à chaque nouvelle question
+      btnNext.style.display = "none";
+      btnNext.disabled = true;
+      hideCorrection();
 
       if (session.mode === "normal" && session.asked >= SETTINGS.normalQuestions) return endSession();
       if (session.mode === "exam" && session.asked >= SETTINGS.examQuestions) return endSession();
@@ -563,6 +567,7 @@
       qcmRow.style.display = "grid";
       hintEl.textContent = "Clique une signification. Puis: Correction / Suivant.";
 
+      // distracteurs
       const forbidden = new Set(item.m.map(x => x.toLowerCase()));
       const pool = [];
       for (const k of KANJI_DEMO){
@@ -611,26 +616,18 @@
         setFeedback(feedbackEl, "bad", `❌ Faux (rép : ${session.correct})`);
       }
 
+      // XP
       app = loadState();
       app.progression = app.progression || { unlockedRank:"E", xp:0, bestStreak:0 };
       const xpGain = ok ? (10 + Math.min(session.streak, 10)) : 0;
       app.progression.xp += xpGain;
       saveState(app);
-
       updateHud(xpGain);
 
-      if (isKanjiPack() && session.correctionData){
-        correctionWrap.style.display = "flex";
-        corrKanji.textContent = session.correctionData.k;
-        corrOn.textContent = (session.correctionData.on?.length ? session.correctionData.on.join(" / ") : "—");
-        corrKun.textContent = (session.correctionData.kun?.length ? session.correctionData.kun.join(" / ") : "—");
-        corrMeanings.textContent = (session.correctionData.m?.length ? session.correctionData.m.join(" • ") : "—");
-        correctionPanel.classList.remove("show");
-      }
-
+      // lock réponses (anti double-clic)
       lock(true);
 
-      // Kana => auto-next
+      // KANA => auto-next
       if (!isKanjiPack()){
         setTimeout(() => {
           lock(false);
@@ -639,8 +636,20 @@
         return;
       }
 
-      // Kanji => manuel
+      // KANJI => activer correction + suivant (MANUEL)
+      if (session.correctionData){
+        correctionWrap.style.display = "flex";
+        btnCorrection.disabled = false;
+
+        corrKanji.textContent = session.correctionData.k;
+        corrOn.textContent = (session.correctionData.on?.length ? session.correctionData.on.join(" / ") : "—");
+        corrKun.textContent = (session.correctionData.kun?.length ? session.correctionData.kun.join(" / ") : "—");
+        corrMeanings.textContent = (session.correctionData.m?.length ? session.correctionData.m.join(" • ") : "—");
+        correctionPanel.classList.remove("show");
+      }
+
       btnNext.style.display = "inline-flex";
+      btnNext.disabled = false;
     }
 
     function shuffle(arr){
@@ -652,10 +661,9 @@
     }
 
     // ============================
-    // START
+    // START ROUTER
     // ============================
     function startQuiz(){
-      // afficher quiz UI + cacher menus
       kanaSelect.style.display = "none";
       kanjiSelect.style.display = "none";
       showQuizUI();
@@ -664,7 +672,7 @@
       nextQuestion();
     }
 
-    // Router
+    // router
     if (pack === "kana" && !modeParam){
       showKanaSelector();
     } else if (pack === "kanji" && (!modeParam || !rankParam)){
@@ -678,4 +686,3 @@
   </script>
 </body>
 </html>
-
