@@ -164,3 +164,40 @@ function addBadge(app, name){
   }
 }
 
+export const RANKS = ["E","D","C","B","A","S","覚"];
+
+export function rankToCeiling(rank){
+  switch(rank){
+    case "E": return 1;
+    case "D": return 2;
+    case "C": return 3;
+    case "B": return 4;
+    case "A": return 5;
+    case "S": return 6;
+    case "覚": return 7; // 7 = collège / tout
+    default: return 1;
+  }
+}
+
+export function isRankUnlocked(unlockedRank, targetRank){
+  return RANKS.indexOf(targetRank) <= RANKS.indexOf(unlockedRank);
+}
+
+export function nextRank(rank){
+  const i = RANKS.indexOf(rank);
+  if (i < 0 || i === RANKS.length - 1) return null;
+  return RANKS[i + 1];
+}
+
+export function unlockNextRank(state, currentRank){
+  const n = nextRank(currentRank);
+  if(!n) return state;
+
+  const curIdx = RANKS.indexOf(state.progression.unlockedRank);
+  const nextIdx = RANKS.indexOf(n);
+
+  if(nextIdx > curIdx){
+    state.progression.unlockedRank = n;
+  }
+  return state;
+}
