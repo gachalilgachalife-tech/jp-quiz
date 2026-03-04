@@ -602,8 +602,6 @@ function showNextButton(show){
         corrMeanings.textContent = (session.correctionData.m?.length ? session.correctionData.m.join(" • ") : "—");
       }
 
-      lock(true);
-
      lock(true);
 
 // ✅ KANA = auto-next
@@ -615,6 +613,12 @@ if (session.pack !== "kanji") {
   return;
 }
 
+      btnNext.addEventListener("click", () => {
+  btnNext.style.display = "none";
+  lock(false);
+  nextQuestion();
+});
+      
 // ✅ KANJI = pause + boutons
 // afficher le bouton "Suivant"
 btnNext.style.display = "inline-flex";
@@ -630,5 +634,6 @@ if (session.correctionData) {
   </script>
 </body>
 </html>
+
 
 
