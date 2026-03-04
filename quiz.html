@@ -130,9 +130,10 @@
         </div>
       </div>
 
-      <div class="footer">
-        <button id="btnStop" class="btn secondary" type="button">Arrêter la session</button>
-      </div>
+     <div class="footer">
+  <button id="btnStop" class="btn secondary" type="button">Arrêter la session</button>
+  <button id="btnNext" class="btn primary" type="button" style="display:none;">Suivant</button>
+</div>
 
     </section>
   </main>
@@ -199,6 +200,7 @@
     const themeToggle = document.getElementById("themeToggle");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
     const btnStop = document.getElementById("btnStop");
+    const btnNext = document.getElementById("btnNext");
 
     const hudScore = document.getElementById("hudScore");
     const hudMini = document.getElementById("hudMini");
@@ -319,6 +321,14 @@
       setFeedback(feedbackEl, "", "");
       hideCorrection();
     }
+
+    function isKanjiPack(){
+  return session.pack === "kanji";
+}
+
+function showNextButton(show){
+  btnNext.style.display = show ? "inline-flex" : "none";
+}
 
     function showCorrection(data){
       if (!data) return;
@@ -612,3 +622,4 @@
   </script>
 </body>
 </html>
+
