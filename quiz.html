@@ -207,6 +207,7 @@
     const kanjiSelect = document.getElementById("kanjiSelect");
     const rankList = document.getElementById("rankList");
     const btnStartKanji = document.getElementById("btnStartKanji");
+    const kanaSelect = document.getElementById("kanaSelect");
 
     const hud = document.getElementById("hud");
     const hudScore = document.getElementById("hudScore");
@@ -331,13 +332,33 @@
     });
 
     // ====== selector kanji
-    function showKanjiSelector(){
-      kanjiSelect.style.display = "block";
-      hud.style.display = "none";
-      feedbackEl.style.display = "none";
-      promptEl.style.display = "none";
-      answer.style.display = "none";
-      document.getElementById("footer").style.display = "none";
+    // ===== selector kanji
+function showKanjiSelector(){
+  kanjiSelect.style.display = "block";
+  if (kanaSelect) kanaSelect.style.display = "none";
+
+  hud.style.display = "none";
+  feedbackEl.style.display = "none";
+  promptEl.style.display = "none";
+  answer.style.display = "none";
+  document.getElementById("footer").style.display = "none";
+
+  modeChip.textContent = "KANJI — Menu";
+}
+
+// ===== selector kana
+function showKanaSelector(){
+  if (kanaSelect) kanaSelect.style.display = "block";
+  kanjiSelect.style.display = "none";
+
+  hud.style.display = "none";
+  feedbackEl.style.display = "none";
+  promptEl.style.display = "none";
+  answer.style.display = "none";
+  document.getElementById("footer").style.display = "none";
+
+  modeChip.textContent = "KANA — Menu";
+}
 
       const unlocked = app.progression?.unlockedRank ?? "E";
       let chosenRank = null;
@@ -659,4 +680,5 @@
   </script>
 </body>
 </html>
+
 
