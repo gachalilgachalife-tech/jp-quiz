@@ -3,8 +3,16 @@ const STORAGE_KEY = "jp_quiz_site_v1";
 export function defaultState(){
   return {
     ui: { theme: "dark" },
+
     last: { normalScore: null, infiniteQuestionsFor100: null },
-    profile: { xp: 0, level: 1, bestStreak: 0, badges: [] },
+
+    // ✅ progression (remplace badges/level)
+    progression: {
+      unlockedRank: "E", // rang max débloqué
+      xp: 0,
+      bestStreak: 0
+    },
+
     stats: {
       byMode: {
         hira_to_romaji: { asked: 0, correct: 0, wrong: 0 },
@@ -155,3 +163,4 @@ function addBadge(app, name){
     app.profile.badges.push(name);
   }
 }
+
