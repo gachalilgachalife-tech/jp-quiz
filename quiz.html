@@ -201,7 +201,13 @@
     const fullscreenBtn = document.getElementById("fullscreenBtn");
     const btnStop = document.getElementById("btnStop");
     const btnNext = document.getElementById("btnNext");
-
+btnNext.addEventListener("click", () => {
+  btnNext.style.display = "none";
+  correctionPanel.classList.remove("show"); // optionnel
+  lock(false);
+  nextQuestion();
+});
+btnNext.style.display = "none";
     const hudScore = document.getElementById("hudScore");
     const hudMini = document.getElementById("hudMini");
     const hudXP = document.getElementById("hudXP");
@@ -612,12 +618,6 @@ if (session.pack !== "kanji") {
   }, SETTINGS.autoNextMs);
   return;
 }
-
-      btnNext.addEventListener("click", () => {
-  btnNext.style.display = "none";
-  lock(false);
-  nextQuestion();
-});
       
 // ✅ KANJI = pause + boutons
 // afficher le bouton "Suivant"
@@ -634,6 +634,7 @@ if (session.correctionData) {
   </script>
 </body>
 </html>
+
 
 
 
