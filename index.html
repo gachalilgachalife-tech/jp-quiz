@@ -6,6 +6,7 @@
   <title>JP Quiz</title>
   <link rel="stylesheet" href="./assets/style.css" />
 </head>
+
 <body>
   <header class="topbar">
     <div class="brand">
@@ -22,17 +23,16 @@
 
   <main class="container">
     <section class="card center">
+
       <h1 class="title">Quiz Japonais</h1>
       <p class="sub">
-        Objectif : apprendre vite tes kana grâce aux modes Normal et Infini, tout en t'amusant.
-        <br/>Choisis un mode :
+        Objectif : apprendre vite (kana + kanji) grâce à des modes courts et infinis, tout en t'amusant.
+        <br/>Choisis une catégorie :
       </p>
 
-      <div id="lastStats" class="stats" style="display:none;"></div>
-
       <div class="actions">
-        <a class="btn primary" href="./quiz.html?mode=normal">Mode normal (10)</a>
-        <a class="btn primary" href="./quiz.html?mode=infini">Mode infini (objectif 100)</a>
+        <a class="btn primary" href="./quiz.html?pack=kana">KANA</a>
+        <a class="btn primary" href="./quiz.html?pack=kanji">KANJI</a>
       </div>
 
       <div class="divider"></div>
@@ -41,22 +41,23 @@
         <div class="panel">
           <div class="panel-title">Progression</div>
           <div class="panel-body">
-            <div class="kpi"><span>Rang</span><strong id="rank">E</strong></div>
+            <div class="kpi"><span>Rang</span><strong id="rank">—</strong></div>
             <div class="kpi"><span>XP</span><strong id="xp">—</strong></div>
             <div class="kpi"><span>Meilleure streak</span><strong id="bestStreak">—</strong></div>
           </div>
         </div>
 
         <div class="panel">
-          <div class="panel-title">Badges</div>
-          <div class="panel-body" id="badges">
-            <!-- chips -->
+          <div class="panel-title">Dernières performances</div>
+          <div class="panel-body">
+            <div class="kpi"><span>Score Normal</span><strong id="lastNormal">—</strong></div>
+            <div class="kpi"><span>Questions pour 100</span><strong id="lastInfinite">—</strong></div>
           </div>
         </div>
       </div>
 
-      <p class="hint">
-        Astuce : tu peux aussi utiliser F11. Le bouton “Plein écran” marche si le navigateur l’autorise.
+      <p class="hint" style="margin-top:14px;">
+        Astuce : tu peux aussi utiliser F11. Le bouton "Plein écran" marche si le navigateur l'autorise.
       </p>
     </section>
   </main>
@@ -64,40 +65,33 @@
   <script type="module">
     import { loadState, saveState, applyTheme, requestFullscreenToggle } from "./assets/app.js";
 
-    const state = loadState();
-    applyTheme(state.ui.theme);
+    const app = loadState();
 
-    // UI
+    // thème
+    applyTheme(app.ui?.theme ?? "dark");
+
+    // progression (nouveau modèle)
+    document.getElementById("rank").textContent = app.progression?.unlockedRank ?? "E";
+    document.getElementById("xp").textContent = app.progression?.xp ?? 0;
+    document.getElementById("bestStreak").textContent = app.progression?.bestStreak ?? 0;
+
+    // derniers scores
+    document.getElementById("lastNormal").textContent =
+      (app.last && app.last.normalScore != null) ? app.last.normalScore : "—";
+
+    document.getElementById("lastInfinite").textContent =
+      (app.last && app.last.infiniteQuestionsFor100 != null) ? app.last.infiniteQuestionsFor100 : "—";
+
+    // actions
+    document.getElementById("fullscreenBtn").addEventListener("click", requestFullscreenToggle);
+
     document.getElementById("themeToggle").addEventListener("click", () => {
       const s = loadState();
+      s.ui = s.ui || { theme: "dark" };
       s.ui.theme = (s.ui.theme === "dark") ? "light" : "dark";
       saveState(s);
       applyTheme(s.ui.theme);
     });
-
-    document.getElementById("fullscreenBtn").addEventListener("click", requestFullscreenToggle);
-
-    // Stats menu
-    const lastStats = document.getElementById("lastStats");
-    const lines = [];
-    if (state.last.normalScore !== null) lines.push(`Dernier score (Normal) : ${state.last.normalScore}/10`);
-    if (state.last.infiniteQuestionsFor100 !== null) {
-      lines.push(`Dernière perf (Infini) : 100 bonnes réponses en ${state.last.infiniteQuestionsFor100} questions`);
-    }
-    if (lines.length) {
-      lastStats.style.display = "block";
-      lastStats.textContent = lines.join("\n");
-    }
-
-    // Progression
-<div class="panel">
-  <div class="panel-title">Progression</div>
-  <div class="panel-body">
-    <div class="kpi"><span>Rang</span><strong id="rank">—</strong></div>
-    <div class="kpi"><span>XP</span><strong id="xp">—</strong></div>
-    <div class="kpi"><span>Meilleure streak</span><strong id="bestStreak">—</strong></div>
-  </div>
-</div>
-  
-
-
+  </script>
+</body>
+</html>
