@@ -282,13 +282,19 @@
 
     function isKanjiPack(){ return session.pack === "kanji"; }
 
-    function lock(v){
-      session.locked = v;
-      if (romajiInput) romajiInput.disabled = v;
-      [...qcmRow.querySelectorAll("button")].forEach(b => b.disabled = v);
-      if (btnCorrection) btnCorrection.disabled = v;
-      if (btnNext) btnNext.disabled = v;
-    }
+   function lock(v){
+  session.locked = v;
+
+  // on bloque la saisie / le QCM
+  if (romajiInput) romajiInput.disabled = v;
+  [...qcmRow.querySelectorAll("button")].forEach(b => b.disabled = v);
+
+  // ✅ en kanji, après réponse, on veut laisser Correction/Suivant actifs
+  const allowNav = (session.pack === "kanji" && v === true);
+
+  if (btnCorrection) btnCorrection.disabled = v && !allowNav;
+  if (btnNext) btnNext.disabled = v && !allowNav;
+}
 
     function hideCorrection(){
       correctionWrap.style.display = "none";
@@ -672,3 +678,4 @@
   </script>
 </body>
 </html>
+
