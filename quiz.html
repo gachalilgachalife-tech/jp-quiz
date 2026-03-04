@@ -6,6 +6,9 @@
   <title>JP Quiz — Session</title>
   <link rel="stylesheet" href="./assets/style.css" />
   <style>
+    .select-wrap{ display:none; }
+    .select-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+
     .correction-wrap{ margin-top: 10px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
     .correction-panel{
       margin-top: 10px;
@@ -31,9 +34,6 @@
     .corr-label{ color: var(--muted); font-size: 12px; font-weight: 800; }
     .corr-value{ font-size: 16px; font-weight: 900; margin-top: 4px; }
     .corr-list{ margin-top: 6px; color: var(--text); font-weight: 800; line-height:1.35; }
-    .select-wrap{ display:none; }
-    .select-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-    .select-title{ font-weight: 900; font-size: 18px; margin-bottom: 10px; text-align:center; }
   </style>
 </head>
 
@@ -54,28 +54,32 @@
   <main class="container">
     <section class="card quiz">
 
-      <div id="kanaSelect" class="select-wrap">
-  <div class="panel" style="margin-bottom:12px;">
-    <div class="panel-title">KANA — Choix du mode</div>
-    <div class="panel-body">
-      <div class="select-row">
-        <a class="btn secondary" href="./quiz.html?pack=kana&mode=normal">Normal (10)</a>
-        <a class="btn secondary" href="./quiz.html?pack=kana&mode=infini">Infini (objectif 100)</a>
-      </div>
-      <p class="hint" style="margin:10px 0 0;">
-        Kana = rythme rapide (auto). Kanji = pause + correction + suivant.
-      </p>
-    </div>
-  </div>
-
-  <div class="actions">
-    <a class="btn secondary" href="./index.html">Retour menu</a>
-  </div>
-
-  <div class="divider"></div>
-</div>
       <!-- ============================
-           KANJI SELECTOR (Maquette A)
+           KANA MENU
+           ============================ -->
+      <div id="kanaSelect" class="select-wrap">
+        <div class="panel" style="margin-bottom:12px;">
+          <div class="panel-title">KANA — Choix du mode</div>
+          <div class="panel-body">
+            <div class="select-row">
+              <a class="btn secondary" href="./quiz.html?pack=kana&mode=normal">Normal (10)</a>
+              <a class="btn secondary" href="./quiz.html?pack=kana&mode=infini">Infini (objectif 100)</a>
+            </div>
+            <p class="hint" style="margin:10px 0 0;">
+              Kana : rythme rapide (auto). Kanji : pause + correction + suivant.
+            </p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a class="btn secondary" href="./index.html">Retour menu</a>
+        </div>
+
+        <div class="divider"></div>
+      </div>
+
+      <!-- ============================
+           KANJI MENU
            ============================ -->
       <div id="kanjiSelect" class="select-wrap">
         <div class="panel" style="margin-bottom:12px;">
@@ -94,7 +98,7 @@
               <button class="btn primary" type="button" data-kmode="exam">Examen (≥ 90%)</button>
             </div>
             <p class="hint" style="margin:10px 0 0;">
-              Les rangs se débloquent via l’examen. En Kanji, tu passes manuellement à la question suivante.
+              Les rangs se débloquent via l’examen.
             </p>
           </div>
         </div>
@@ -108,7 +112,7 @@
       </div>
 
       <!-- ============================
-           HUD + QUIZ
+           QUIZ UI
            ============================ -->
       <div class="hud" id="hud">
         <div class="hud-left">
@@ -133,7 +137,6 @@
         <div class="qcm" id="qcmRow" style="display:none;"></div>
         <div class="hint" id="hint">—</div>
 
-        <!-- correction (KANJI) -->
         <div class="correction-wrap" id="correctionWrap" style="display:none;">
           <button id="btnCorrection" class="btn secondary" type="button">Correction</button>
         </div>
@@ -173,7 +176,9 @@
       unlockNextRank, RANKS, isRankUnlocked
     } from "./assets/app.js";
 
-    // ====== Demo Kanji (placeholder en attendant tes 2141)
+    // ============================
+    // DEMO KANJI (placeholder)
+    // ============================
     const KANJI_DEMO = [
       {"k":"日","g":1,"m":["jour","soleil"],"on":["ニチ","ジツ"],"kun":["ひ","か"]},
       {"k":"人","g":1,"m":["personne","humain"],"on":["ジン","ニン"],"kun":["ひと"]},
@@ -185,10 +190,12 @@
       {"k":"天","g":2,"m":["ciel","paradis"],"on":["テン"],"kun":[]}
     ];
 
-    // ====== Params
+    // ============================
+    // PARAMS
+    // ============================
     const url = new URL(location.href);
     const pack = url.searchParams.get("pack") || "kana";
-    const modeParam = url.searchParams.get("mode"); // pas de default pour gérer le selector
+    const modeParam = url.searchParams.get("mode"); // pas de default -> menus
     const rankParam = url.searchParams.get("rank");
 
     const SETTINGS = {
@@ -199,15 +206,17 @@
       autoNextMs: 650
     };
 
-    // ====== UI refs
+    // ============================
+    // UI REFS
+    // ============================
     const modeChip = document.getElementById("modeChip");
     const themeToggle = document.getElementById("themeToggle");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
 
+    const kanaSelect = document.getElementById("kanaSelect");
     const kanjiSelect = document.getElementById("kanjiSelect");
     const rankList = document.getElementById("rankList");
     const btnStartKanji = document.getElementById("btnStartKanji");
-    const kanaSelect = document.getElementById("kanaSelect");
 
     const hud = document.getElementById("hud");
     const hudScore = document.getElementById("hudScore");
@@ -235,12 +244,14 @@
 
     const btnStop = document.getElementById("btnStop");
     const btnNext = document.getElementById("btnNext");
+    const footer = document.getElementById("footer");
 
-    // ====== App state
+    // ============================
+    // APP STATE
+    // ============================
     let app = loadState();
     applyTheme(app.ui?.theme ?? "dark");
 
-    // ====== Top actions
     themeToggle?.addEventListener("click", () => {
       const s = loadState();
       s.ui = s.ui || { theme:"dark" };
@@ -252,7 +263,9 @@
 
     btnStop?.addEventListener("click", () => location.href = "./index.html");
 
-    // ====== Session
+    // ============================
+    // SESSION
+    // ============================
     let session = {
       pack,
       mode: modeParam || "normal",
@@ -263,7 +276,6 @@
       bestStreakThisSession: 0,
       lastMode: null,
       locked: false,
-      kind: null,
       correct: null,
       correctionData: null
     };
@@ -291,6 +303,12 @@
       hideCorrection();
     }
 
+    function updateChip(){
+      const prettyPack = (session.pack === "kanji") ? "KANJI" : "KANA";
+      const prettyMode = (session.mode === "infini") ? "Infini" : (session.mode === "exam" ? "Examen" : "Normal");
+      modeChip.textContent = `${prettyPack} — ${prettyMode}`;
+    }
+
     function updateHud(xpGain = 0){
       if (session.mode === "exam") {
         hudScore.textContent = `Score : ${session.good}/${SETTINGS.examQuestions}`;
@@ -306,7 +324,7 @@
       hudStreak.textContent = `Streak ${session.streak}`;
     }
 
-    // ====== CAPS indicator
+    // CAPS
     function updateCaps(e){
       if (!e || typeof e.getModifierState !== "function") return;
       capsIndicator.classList.toggle("on", !!e.getModifierState("CapsLock"));
@@ -318,48 +336,51 @@
     romajiInput?.addEventListener("keyup", updateCaps);
     romajiInput?.addEventListener("focus", updateCaps);
 
-    // ====== Correction toggle
     btnCorrection?.addEventListener("click", () => {
       if (!session.correctionData) return;
       correctionPanel.classList.toggle("show");
     });
 
-    // ====== Next button (ONE TIME)
     btnNext?.addEventListener("click", () => {
       btnNext.style.display = "none";
       lock(false);
       nextQuestion();
     });
 
-    // ====== selector kanji
-    // ===== selector kanji
-function showKanjiSelector(){
-  kanjiSelect.style.display = "block";
-  if (kanaSelect) kanaSelect.style.display = "none";
+    // ============================
+    // SHOW MENUS
+    // ============================
+    function hideQuizUI(){
+      hud.style.display = "none";
+      feedbackEl.style.display = "none";
+      promptEl.style.display = "none";
+      answer.style.display = "none";
+      footer.style.display = "none";
+    }
+    function showQuizUI(){
+      hud.style.display = "flex";
+      feedbackEl.style.display = "";
+      promptEl.style.display = "";
+      answer.style.display = "";
+      footer.style.display = "";
+    }
 
-  hud.style.display = "none";
-  feedbackEl.style.display = "none";
-  promptEl.style.display = "none";
-  answer.style.display = "none";
-  document.getElementById("footer").style.display = "none";
+    function showKanaSelector(){
+      kanaSelect.style.display = "block";
+      kanjiSelect.style.display = "none";
+      hideQuizUI();
+      modeChip.textContent = "KANA — Menu";
+    }
 
-  modeChip.textContent = "KANJI — Menu";
-}
+    function showKanjiSelector(){
+      kanaSelect.style.display = "none";
+      kanjiSelect.style.display = "block";
+      hideQuizUI();
+      modeChip.textContent = "KANJI — Menu";
+      buildKanjiSelector();
+    }
 
-// ===== selector kana
-function showKanaSelector(){
-  if (kanaSelect) kanaSelect.style.display = "block";
-  kanjiSelect.style.display = "none";
-
-  hud.style.display = "none";
-  feedbackEl.style.display = "none";
-  promptEl.style.display = "none";
-  answer.style.display = "none";
-  document.getElementById("footer").style.display = "none";
-
-  modeChip.textContent = "KANA — Menu";
-}
-
+    function buildKanjiSelector(){
       const unlocked = app.progression?.unlockedRank ?? "E";
       let chosenRank = null;
       let chosenMode = null;
@@ -391,35 +412,27 @@ function showKanaSelector(){
         });
       });
 
-      btnStartKanji.addEventListener("click", () => {
+      btnStartKanji.onclick = () => {
         const go = `./quiz.html?pack=kanji&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
         location.href = go;
-      });
+      };
     }
 
-    // ====== mode chip
-    function updateChip(){
-      const prettyPack = (session.pack === "kanji") ? "KANJI" : "KANA";
-      const prettyMode = (session.mode === "infini") ? "Infini" : (session.mode === "exam" ? "Examen" : "Normal");
-      modeChip.textContent = `${prettyPack} — ${prettyMode}`;
-    }
-
-    // ====== end session
+    // ============================
+    // END SESSION
+    // ============================
     function endSession(){
       app = loadState();
-
-      // best streak global
       app.progression = app.progression || { unlockedRank:"E", xp:0, bestStreak:0 };
+
       if (session.bestStreakThisSession > (app.progression.bestStreak ?? 0)) {
         app.progression.bestStreak = session.bestStreakThisSession;
       }
 
-      // last
       app.last = app.last || { normalScore:null, infiniteQuestionsFor100:null };
       if (session.mode === "normal") app.last.normalScore = session.good;
       if (session.mode === "infini") app.last.infiniteQuestionsFor100 = session.asked;
 
-      // exam unlock
       if (session.mode === "exam" && session.pack === "kanji") {
         const pass = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
         if (pass) app = unlockNextRank(app, session.rank);
@@ -427,11 +440,10 @@ function showKanaSelector(){
 
       saveState(app);
 
-      // UI end
       lock(true);
       inputRow.style.display = "none";
       qcmRow.style.display = "none";
-      btnNext.style.display = "none";
+      if (btnNext) btnNext.style.display = "none";
       hideCorrection();
 
       const passText = (session.mode === "exam")
@@ -441,11 +453,12 @@ function showKanaSelector(){
       promptEl.textContent = "Fin";
       hintEl.textContent = "";
       setFeedback(feedbackEl, "", passText);
+
       hudMini.textContent = "";
       hudXP.textContent = "";
       hudStreak.textContent = "";
 
-      document.getElementById("footer").innerHTML = `
+      footer.innerHTML = `
         <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
           <a class="btn primary" href="./index.html">Retour menu</a>
           <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
@@ -453,12 +466,12 @@ function showKanaSelector(){
       `;
     }
 
-    // ====== Question generation
+    // ============================
+    // QUESTIONS
+    // ============================
     function nextQuestion(){
-      // hide next always at start
       if (btnNext) btnNext.style.display = "none";
 
-      // end conditions
       if (session.mode === "normal" && session.asked >= SETTINGS.normalQuestions) return endSession();
       if (session.mode === "exam" && session.asked >= SETTINGS.examQuestions) return endSession();
       if (session.mode === "infini" && session.good >= SETTINGS.infiniteGoal) return endSession();
@@ -475,13 +488,11 @@ function showKanaSelector(){
 
     function askKana(){
       const type = chooseModePro(session);
-      session.kind = null;
       session.correct = null;
       session.correctionData = null;
 
       if (type === "hira_to_romaji"){
         const [char, romaji] = pickRandomEntry(HIRAGANA);
-        session.kind = "input";
         session.correct = romaji;
         promptEl.textContent = `Romaji de ${char}`;
         inputRow.style.display = "flex";
@@ -493,7 +504,6 @@ function showKanaSelector(){
 
       if (type === "kata_to_romaji"){
         const [char, romaji] = pickRandomEntry(KATAKANA);
-        session.kind = "input";
         session.correct = romaji;
         promptEl.textContent = `ROMAJI de ${char}`;
         inputRow.style.display = "flex";
@@ -505,7 +515,6 @@ function showKanaSelector(){
 
       if (type === "romaji_to_hira"){
         const [char, romaji] = pickRandomEntry(HIRAGANA);
-        session.kind = "qcm";
         session.correct = char;
         promptEl.textContent = `Hiragana de ${romaji}`;
         inputRow.style.display = "none";
@@ -515,9 +524,7 @@ function showKanaSelector(){
         return;
       }
 
-      // romaji_to_kata
       const [char, romaji] = pickRandomEntry(KATAKANA);
-      session.kind = "qcm";
       session.correct = char;
       promptEl.textContent = `Katakana de ${romaji}`;
       inputRow.style.display = "none";
@@ -539,20 +546,17 @@ function showKanaSelector(){
     }
 
     function askKanji(){
-      // V1 = demo. Plus tard: pool par rank plafond.
       const item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)];
       const correctMeaning = item.m[Math.floor(Math.random() * item.m.length)];
 
-      session.kind = "qcm";
       session.correct = correctMeaning;
       session.correctionData = item;
 
       promptEl.textContent = item.k;
       inputRow.style.display = "none";
       qcmRow.style.display = "grid";
-      hintEl.textContent = "Clique une signification. (Ensuite: Correction / Suivant)";
+      hintEl.textContent = "Clique une signification. Puis: Correction / Suivant.";
 
-      // distracteurs intelligents (évite meanings du kanji)
       const forbidden = new Set(item.m.map(x => x.toLowerCase()));
       const pool = [];
       for (const k of KANJI_DEMO){
@@ -583,13 +587,14 @@ function showKanaSelector(){
       }
     }
 
-    // ====== Submit
+    // ============================
+    // SUBMIT
+    // ============================
     function submit(value){
       if (session.locked) return;
 
       const ok = (value === session.correct);
 
-      // update session
       if (ok){
         session.good += 1;
         session.streak += 1;
@@ -600,7 +605,6 @@ function showKanaSelector(){
         setFeedback(feedbackEl, "bad", `❌ Faux (rép : ${session.correct})`);
       }
 
-      // xp
       app = loadState();
       app.progression = app.progression || { unlockedRank:"E", xp:0, bestStreak:0 };
       const xpGain = ok ? (10 + Math.min(session.streak, 10)) : 0;
@@ -609,7 +613,6 @@ function showKanaSelector(){
 
       updateHud(xpGain);
 
-      // show correction if kanji
       if (isKanjiPack() && session.correctionData){
         correctionWrap.style.display = "flex";
         corrKanji.textContent = session.correctionData.k;
@@ -621,7 +624,7 @@ function showKanaSelector(){
 
       lock(true);
 
-      // KANA => auto-next
+      // Kana => auto-next
       if (!isKanjiPack()){
         setTimeout(() => {
           lock(false);
@@ -630,9 +633,8 @@ function showKanaSelector(){
         return;
       }
 
-      // KANJI => manual next
+      // Kanji => manuel
       btnNext.style.display = "inline-flex";
-      // no auto-next
     }
 
     function shuffle(arr){
@@ -643,42 +645,30 @@ function showKanaSelector(){
       return arr;
     }
 
-    // ====== Start logic
-    function startQuizWith(pack, mode, rank){
-      session.pack = pack;
-      session.mode = mode;
-      session.rank = rank || "E";
-      updateChip();
-
-      // show quiz UI
+    // ============================
+    // START
+    // ============================
+    function startQuiz(){
+      // afficher quiz UI + cacher menus
+      kanaSelect.style.display = "none";
       kanjiSelect.style.display = "none";
-      hud.style.display = "flex";
-      feedbackEl.style.display = "";
-      promptEl.style.display = "";
-      answer.style.display = "";
-      document.getElementById("footer").style.display = "";
-
+      showQuizUI();
+      updateChip();
       updateHud(0);
       nextQuestion();
     }
 
-    // If Kanji and missing mode/rank => selector
-    if (pack === "kanji" && (!modeParam || !rankParam)){
-      modeChip.textContent = "KANJI — Menu";
+    // Router
+    if (pack === "kana" && !modeParam){
+      showKanaSelector();
+    } else if (pack === "kanji" && (!modeParam || !rankParam)){
       showKanjiSelector();
     } else {
-      // start directly
-      const m = modeParam || "normal";
-      const r = rankParam || "E";
       session.pack = pack;
-      session.mode = m;
-      session.rank = r;
-      updateChip();
-      updateHud(0);
-      nextQuestion();
+      session.mode = modeParam || "normal";
+      session.rank = rankParam || "E";
+      startQuiz();
     }
   </script>
 </body>
 </html>
-
-
