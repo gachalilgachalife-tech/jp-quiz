@@ -604,17 +604,25 @@ function showNextButton(show){
 
       lock(true);
 
-      // auto next
-      setTimeout(nextQuestion, SETTINGS.autoNextMs);
-    }
+     lock(true);
 
-    function shuffle(arr){
-      for(let i = arr.length - 1; i > 0; i--){
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    }
+// ✅ KANA = auto-next
+if (session.pack !== "kanji") {
+  setTimeout(() => {
+    lock(false);
+    nextQuestion();
+  }, SETTINGS.autoNextMs);
+  return;
+}
+
+// ✅ KANJI = pause + boutons
+// afficher le bouton "Suivant"
+btnNext.style.display = "inline-flex";
+
+// laisser la correction disponible (si data présente)
+if (session.correctionData) {
+  correctionWrap.style.display = "flex";
+}
 
     // start
     updateHud(0);
@@ -622,4 +630,5 @@ function showNextButton(show){
   </script>
 </body>
 </html>
+
 
