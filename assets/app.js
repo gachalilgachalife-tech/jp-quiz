@@ -1,18 +1,16 @@
-const STORAGE_KEY = "jp_quiz_site_v1";
+// assets/app.js
 
-export function defaultState(){
+// -----------------------------
+// STATE
+// -----------------------------
+const STORAGE_KEY = "jpQuizState";
+
+export function defaultState() {
   return {
     ui: { theme: "dark" },
-
     last: { normalScore: null, infiniteQuestionsFor100: null },
-
-    // ✅ progression (remplace badges/level)
-    progression: {
-      unlockedRank: "E", // rang max débloqué
-      xp: 0,
-      bestStreak: 0
-    },
-
+    progression: { unlockedRank: "E", xp: 0, bestStreak: 0 },
+    // stats optionnelles (pas obligatoire pour fonctionner)
     stats: {
       byMode: {
         hira_to_romaji: { asked: 0, correct: 0, wrong: 0 },
@@ -20,184 +18,144 @@ export function defaultState(){
         kata_to_romaji: { asked: 0, correct: 0, wrong: 0 },
         romaji_to_kata: { asked: 0, correct: 0, wrong: 0 },
       },
-      wrongKana: {} // { "し": 3, "ツ": 2, ... }
-    }
+    },
   };
 }
 
-export function loadState(){
-  try{
+export function loadState() {
+  try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultState();
-    const s = JSON.parse(raw);
-    // merge minimal safety
-    const d = defaultState();
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+
+    // petite fusion safe
+    const base = defaultState();
     return {
-      ...d,
-      ...s,
-      ui: { ...d.ui, ...(s.ui||{}) },
-      last: { ...d.last, ...(s.last||{}) },
-      profile: { ...d.profile, ...(s.profile||{}) },
-      stats: {
-        ...d.stats,
-        ...(s.stats||{}),
-        byMode: { ...d.stats.byMode, ...((s.stats||{}).byMode||{}) },
-        wrongKana: { ...((s.stats||{}).wrongKana||{}) }
-      }
+      ...base,
+      ...parsed,
+      ui: { ...base.ui, ...(parsed.ui || {}) },
+      last: { ...base.last, ...(parsed.last || {}) },
+      progression: { ...base.progression, ...(parsed.progression || {}) },
+      stats: { ...base.stats, ...(parsed.stats || {}) },
     };
-  }catch{
+  } catch {
     return defaultState();
   }
 }
 
-export function saveState(state){
+export function saveState(state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-// Theme
-export function applyTheme(theme){
-  document.documentElement.dataset.theme = theme;
+// -----------------------------
+// THEME + FULLSCREEN
+// -----------------------------
+export function applyTheme(theme) {
+  const t = theme === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = t;
 }
 
-export function requestFullscreenToggle(){
-  try{
-    if(!document.fullscreenElement){
-      document.documentElement.requestFullscreen?.();
-    }else{
-      document.exitFullscreen?.();
-    }
-  }catch{}
+export function requestFullscreenToggle() {
+  const el = document.documentElement;
+  if (!document.fullscreenElement) {
+    el.requestFullscreen?.().catch(() => {});
+  } else {
+    document.exitFullscreen?.().catch(() => {});
+  }
 }
 
-// Anti-répétition modes
-const MODES = ["hira_to_romaji","romaji_to_hira","kata_to_romaji","romaji_to_kata"];
-
-export function chooseModePro(session){
-  const candidates = MODES.filter(m => m !== session.lastMode);
-  const m = candidates[Math.floor(Math.random()*candidates.length)];
-  session.lastMode = m;
-  return m;
+// -----------------------------
+// UI helpers
+// -----------------------------
+export function setFeedback(el, cls, text) {
+  if (!el) return;
+  el.classList.remove("good", "bad");
+  if (cls) el.classList.add(cls);
+  el.textContent = text || "";
 }
 
-export function pickRandomEntry(obj){
+// -----------------------------
+// Kana mode picker (PRO anti-répétition)
+// -----------------------------
+const MODES = ["hira_to_romaji", "romaji_to_hira", "kata_to_romaji", "romaji_to_kata"];
+
+export function chooseModePro(session) {
+  // session.lastMode : dernier mode joué
+  // règle: jamais 2 fois le même d'affilée + alternance plus "naturelle"
+  const last = session.lastMode;
+
+  let pool = MODES.filter((m) => m !== last);
+  // petite préférence : alterner input / qcm
+  // input: *_to_romaji ; qcm: romaji_to_*
+  if (last) {
+    const lastIsInput = last.endsWith("_to_romaji");
+    const wantInput = !lastIsInput;
+    const preferred = pool.filter((m) => m.endsWith("_to_romaji") === wantInput);
+    if (preferred.length) pool = preferred;
+  }
+
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  session.lastMode = pick;
+  return pick;
+}
+
+// -----------------------------
+// Random helpers
+// -----------------------------
+export function pickRandomEntry(obj) {
   const keys = Object.keys(obj);
   const k = keys[Math.floor(Math.random() * keys.length)];
   return [k, obj[k]];
 }
 
-export function buildQcmChoices(allChars, correctChar){
-  const pool = allChars.filter(c => c !== correctChar);
-  shuffle(pool);
-  const choices = pool.slice(0,4);
-  choices.push(correctChar);
-  shuffle(choices);
-  return choices;
+export function buildQcmChoices(allChars, correctChar, count = 5) {
+  const pool = allChars.filter((c) => c !== correctChar);
+  const picks = [];
+
+  while (picks.length < count - 1 && pool.length > 0) {
+    const idx = Math.floor(Math.random() * pool.length);
+    picks.push(pool[idx]);
+    pool.splice(idx, 1);
+  }
+
+  picks.push(correctChar);
+  shuffle(picks);
+  return picks;
 }
 
-function shuffle(arr){
-  for(let i=arr.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]] = [arr[j],arr[i]];
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
 }
 
-// Feedback helper
-export function setFeedback(el, type, text){
-  el.className = "feedback " + (type || "");
-  el.textContent = text || "";
+// -----------------------------
+// RANKS (Yo-kai-ish letters)
+// -----------------------------
+export const RANKS = ["E", "D", "C", "B", "A", "S", "覚"];
+
+export function isRankUnlocked(unlockedRank, rank) {
+  const u = RANKS.indexOf(unlockedRank || "E");
+  const r = RANKS.indexOf(rank);
+  if (r === -1) return false;
+  return r <= (u === -1 ? 0 : u);
 }
 
-// HUD formatting
-export function formatHud(session, SETTINGS){
-  if(session.mode === "normal"){
-    return {
-      score: `Score : ${session.good}`,
-      mini: `Question : ${session.asked}/${SETTINGS.normalQuestions}`
-    };
+export function unlockNextRank(appState, currentRank) {
+  const cur = RANKS.indexOf(currentRank);
+  if (cur === -1) return appState;
+
+  const next = Math.min(cur + 1, RANKS.length - 1);
+  const nextRank = RANKS[next];
+
+  const s = appState || defaultState();
+  s.progression = s.progression || { unlockedRank: "E", xp: 0, bestStreak: 0 };
+
+  const unlocked = s.progression.unlockedRank || "E";
+  if (RANKS.indexOf(nextRank) > RANKS.indexOf(unlocked)) {
+    s.progression.unlockedRank = nextRank;
   }
-  return {
-    score: `Bonnes réponses : ${session.good}/${SETTINGS.infiniteGoal}`,
-    mini: `Questions : ${session.asked}`
-  };
-}
-
-// XP / Levels / Badges
-export function awardXPAndBadges(app, xpGain, ctx){
-  const s = structuredClone(app);
-
-  s.profile.xp += xpGain;
-
-  // Level curve: simple & addictive
-  // lvl up at: 200, 450, 750, 1100, ...
-  while (s.profile.xp >= xpToReachLevel(s.profile.level + 1)) {
-    s.profile.level += 1;
-    addBadge(s, `Niveau ${s.profile.level}`);
-  }
-
-  // streak badges
-  const streak = ctx?.session?.streak ?? 0;
-  if (streak === 10) addBadge(s, "Streak x10");
-  if (streak === 25) addBadge(s, "Streak x25");
-  if (streak === 50) addBadge(s, "Streak x50");
-
-  // session milestones (based on total asked across modes)
-  const totalAsked = Object.values(s.stats.byMode).reduce((a,m)=>a + (m.asked||0), 0);
-  if (totalAsked >= 200) addBadge(s, "200 questions");
-  if (totalAsked >= 500) addBadge(s, "500 questions");
-  if (totalAsked >= 1000) addBadge(s, "1000 questions");
-
   return s;
-}
-
-function xpToReachLevel(level){
-  // level 2 = 200, 3 = 450, 4 = 750...
-  // formula: 100*level*(level-1) / 2 + 100
-  // but we want level 1 start at 0, so:
-  if(level <= 1) return 0;
-  return Math.floor(100 * (level * (level - 1)) / 2);
-}
-
-function addBadge(app, name){
-  if(!app.profile.badges.includes(name)){
-    app.profile.badges.push(name);
-  }
-}
-
-export const RANKS = ["E","D","C","B","A","S","覚"];
-
-export function rankToCeiling(rank){
-  switch(rank){
-    case "E": return 1;
-    case "D": return 2;
-    case "C": return 3;
-    case "B": return 4;
-    case "A": return 5;
-    case "S": return 6;
-    case "覚": return 7; // 7 = collège / tout
-    default: return 1;
-  }
-}
-
-export function isRankUnlocked(unlockedRank, targetRank){
-  return RANKS.indexOf(targetRank) <= RANKS.indexOf(unlockedRank);
-}
-
-export function nextRank(rank){
-  const i = RANKS.indexOf(rank);
-  if (i < 0 || i === RANKS.length - 1) return null;
-  return RANKS[i + 1];
-}
-
-export function unlockNextRank(state, currentRank){
-  const n = nextRank(currentRank);
-  if(!n) return state;
-
-  const curIdx = RANKS.indexOf(state.progression.unlockedRank);
-  const nextIdx = RANKS.indexOf(n);
-
-  if(nextIdx > curIdx){
-    state.progression.unlockedRank = n;
-  }
-  return state;
 }
