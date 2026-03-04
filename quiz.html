@@ -5,7 +5,60 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JP Quiz — Session</title>
   <link rel="stylesheet" href="./assets/style.css" />
+
+  <style>
+    /* mini-ajout pour "Correction" */
+    .correction-wrap{
+      margin-top: 10px;
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .correction-panel{
+      margin-top: 10px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: var(--card2);
+      padding: 12px 14px;
+      display:none;
+      max-width: 720px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    .correction-panel.show{ display:block; }
+    .corr-title{
+      font-weight: 900;
+      font-size: 18px;
+      margin-bottom: 8px;
+      text-align:center;
+    }
+    .corr-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 720px){
+      .corr-grid{ grid-template-columns: 1fr; }
+    }
+    .corr-box{
+      border:1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,.04);
+    }
+    :root[data-theme="dark"] .corr-box{
+      background: rgba(11,15,20,.35);
+    }
+    .corr-label{ color: var(--muted); font-size: 12px; font-weight: 800; }
+    .corr-value{ font-size: 16px; font-weight: 900; margin-top: 4px; }
+    .corr-list{ margin-top: 6px; color: var(--text); font-weight: 800; line-height:1.35; }
+    .end-actions{
+      display:flex; justify-content:center; gap:12px; margin-top: 14px; flex-wrap:wrap;
+    }
+  </style>
 </head>
+
 <body>
   <header class="topbar">
     <div class="brand">
@@ -23,6 +76,8 @@
 
   <main class="container">
     <section class="card quiz">
+
+      <!-- HUD -->
       <div class="hud">
         <div class="hud-left">
           <div class="hud-score" id="hudScore">—</div>
@@ -34,10 +89,13 @@
         </div>
       </div>
 
+      <!-- feedback discret -->
       <div class="feedback" id="feedback"></div>
 
+      <!-- prompt -->
       <div class="prompt" id="prompt">—</div>
 
+      <!-- answer area -->
       <div class="answer">
         <div class="input-row" id="inputRow" style="display:none;">
           <input id="romajiInput" type="text" autocomplete="off" spellcheck="false" />
@@ -46,12 +104,36 @@
 
         <div class="qcm" id="qcmRow" style="display:none;"></div>
 
-        <div class="hint" id="hint">Entrée pour valider.</div>
+        <div class="hint" id="hint">—</div>
+
+        <!-- correction -->
+        <div class="correction-wrap" id="correctionWrap" style="display:none;">
+          <button id="btnCorrection" class="btn secondary" type="button">Correction</button>
+        </div>
+
+        <div class="correction-panel" id="correctionPanel">
+          <div class="corr-title" id="corrKanji">—</div>
+          <div class="corr-grid">
+            <div class="corr-box">
+              <div class="corr-label">Lectures ON</div>
+              <div class="corr-value" id="corrOn">—</div>
+            </div>
+            <div class="corr-box">
+              <div class="corr-label">Lectures KUN</div>
+              <div class="corr-value" id="corrKun">—</div>
+            </div>
+            <div class="corr-box" style="grid-column: 1 / -1;">
+              <div class="corr-label">Sens</div>
+              <div class="corr-list" id="corrMeanings">—</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="footer">
         <button id="btnStop" class="btn secondary" type="button">Arrêter la session</button>
       </div>
+
     </section>
   </main>
 
@@ -60,13 +142,59 @@
     import {
       loadState, saveState, applyTheme, requestFullscreenToggle,
       chooseModePro, pickRandomEntry, buildQcmChoices,
-      awardXPAndBadges, formatHud, setFeedback
+      setFeedback, formatHud,
+      // ✅ rangs/examen (doivent exister dans app.js)
+      unlockNextRank
     } from "./assets/app.js";
 
-    // --- init
-    const url = new URL(location.href);
-    const mode = (url.searchParams.get("mode") === "infini") ? "infini" : "normal";
+    // ============================
+    // KANJI DEMO (placeholder)
+    // ============================
+    // En attendant tes 2141, on met quelques kanji pour tester tout le système.
+    // Format: {k, g, m[], on[], kun[]}
+    const KANJI_DEMO = [
+      {"k":"日","g":1,"m":["jour","soleil"],"on":["ニチ","ジツ"],"kun":["ひ","か"]},
+      {"k":"人","g":1,"m":["personne","humain"],"on":["ジン","ニン"],"kun":["ひと"]},
+      {"k":"水","g":1,"m":["eau"],"on":["スイ"],"kun":["みず"]},
+      {"k":"山","g":1,"m":["montagne"],"on":["サン"],"kun":["やま"]},
+      {"k":"海","g":2,"m":["mer","océan"],"on":["カイ"],"kun":["うみ"]},
+      {"k":"森","g":1,"m":["forêt"],"on":["シン"],"kun":["もり"]},
+      {"k":"火","g":1,"m":["feu"],"on":["カ"],"kun":["ひ"]},
+      {"k":"天","g":2,"m":["ciel","paradis"],"on":["テン"],"kun":[]},
+    ];
 
+    // ============================
+    // PARAMS
+    // ============================
+    const url = new URL(location.href);
+
+    // pack:
+    // - (vide) -> compat ancien: kana
+    // - "kana"
+    // - "kanji"
+    const pack = url.searchParams.get("pack") || "kana";
+
+    // mode:
+    // - normal : 10 questions
+    // - infini : objectif 100 bonnes réponses
+    // - exam   : 10 questions, réussite >= 90% (débloque rang suivant si pack=kanji)
+    const mode = url.searchParams.get("mode") || "normal";
+
+    // rank (utile seulement pour kanji)
+    const rank = url.searchParams.get("rank") || "E";
+
+    const SETTINGS = {
+      normalQuestions: 10,
+      examQuestions: 10,
+      examPassRate: 0.90,     // 90% => 9/10
+      infiniteGoal: 100,
+      autoNextMs: 650,
+      showCorrectOnWrong: true,
+    };
+
+    // ============================
+    // UI refs
+    // ============================
     const modeChip = document.getElementById("modeChip");
     const themeToggle = document.getElementById("themeToggle");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
@@ -79,11 +207,21 @@
 
     const feedbackEl = document.getElementById("feedback");
     const promptEl = document.getElementById("prompt");
+    const hintEl = document.getElementById("hint");
+
     const inputRow = document.getElementById("inputRow");
     const romajiInput = document.getElementById("romajiInput");
     const capsIndicator = document.getElementById("capsIndicator");
+
     const qcmRow = document.getElementById("qcmRow");
-    const hintEl = document.getElementById("hint");
+
+    const correctionWrap = document.getElementById("correctionWrap");
+    const btnCorrection = document.getElementById("btnCorrection");
+    const correctionPanel = document.getElementById("correctionPanel");
+    const corrKanji = document.getElementById("corrKanji");
+    const corrOn = document.getElementById("corrOn");
+    const corrKun = document.getElementById("corrKun");
+    const corrMeanings = document.getElementById("corrMeanings");
 
     let app = loadState();
     applyTheme(app.ui.theme);
@@ -96,50 +234,21 @@
     });
     fullscreenBtn.addEventListener("click", requestFullscreenToggle);
 
-    modeChip.textContent = (mode === "normal") ? "Mode: Normal" : "Mode: Infini";
+    btnStop.addEventListener("click", () => {
+      // arrêt manuel = retour menu sans validation d’exam
+      location.href = "./index.html";
+    });
 
-    // --- session state
-    const SETTINGS = {
-      normalQuestions: 10,
-      infiniteGoal: 100,
-      autoNextMs: 650,
-      showCorrectOnWrong: true,
-    };
+    // ============================
+    // MODE CHIP
+    // ============================
+    const prettyPack = (pack === "kanji") ? "KANJI" : "KANA";
+    const prettyMode = (mode === "infini") ? "Infini" : (mode === "exam" ? "Examen" : "Normal");
+    modeChip.textContent = `${prettyPack} — ${prettyMode}`;
 
-    let session = {
-      mode,
-      good: 0,
-      asked: 0,
-      streak: 0,
-      bestStreakThisSession: 0,
-      lastMode: null,
-      locked: false,
-      correct: null,     // expected exact string
-      modeType: null,    // one of 4
-      kind: null,        // "input" | "qcm"
-    };
-
-    function updateHud(extraXp=0){
-      const out = formatHud(session, SETTINGS);
-      hudScore.textContent = out.score;
-      hudMini.textContent = out.mini;
-      hudXP.textContent = `XP +${extraXp}`;
-      hudStreak.textContent = `Streak ${session.streak}`;
-    }
-
-    function clearAnswerArea(){
-      qcmRow.innerHTML = "";
-      romajiInput.value = "";
-      setFeedback(feedbackEl, "", "");
-    }
-
-    function lock(lock){
-      session.locked = lock;
-      romajiInput.disabled = lock;
-      [...qcmRow.querySelectorAll("button")].forEach(b => b.disabled = lock);
-    }
-
-    // CAPS indicator: browser gives it via keyboard events
+    // ============================
+    // CAPS indicator
+    // ============================
     function updateCaps(e){
       if (!e || typeof e.getModifierState !== "function") return;
       const caps = e.getModifierState("CapsLock");
@@ -152,36 +261,159 @@
     romajiInput.addEventListener("keyup", updateCaps);
     romajiInput.addEventListener("focus", updateCaps);
 
-    btnStop.addEventListener("click", () => stopAndBackToMenu(false));
+    // ============================
+    // SESSION STATE
+    // ============================
+    let session = {
+      pack,
+      mode,
+      rank,         // utilisé pour kanji examen
+      asked: 0,
+      good: 0,
+      streak: 0,
+      bestStreakThisSession: 0,
+      lastMode: null, // anti-repetition (kana types)
+      locked: false,
 
-    function stopAndBackToMenu(isNaturalEnd){
-      // Save menu last results when ending "normally"
-      app = loadState();
+      // question data
+      kind: null,       // "input" | "qcm"
+      modeType: null,   // kana type (4 modes)
+      correct: null,    // string correct answer
+      correctionData: null, // pour kanji: {k, on[], kun[], m[]}
+    };
 
-      if (session.mode === "normal") {
-        // if natural end, store score; if stop early, store nothing
-        if (isNaturalEnd) app.last.normalScore = session.good;
+    function totalQuestions(){
+      if (mode === "infini") return null;
+      if (mode === "exam") return SETTINGS.examQuestions;
+      return SETTINGS.normalQuestions;
+    }
+
+    function updateHud(extraXp = 0){
+      // formatHud attend session.mode === "normal"/"infini"
+      // On adapte pour "exam"
+      if (mode === "exam") {
+        hudScore.textContent = `Score : ${session.good}/${SETTINGS.examQuestions}`;
+        hudMini.textContent = `Question : ${session.asked}/${SETTINGS.examQuestions}`;
+      } else if (mode === "normal") {
+        hudScore.textContent = `Score : ${session.good}`;
+        hudMini.textContent = `Question : ${session.asked}/${SETTINGS.normalQuestions}`;
       } else {
-        if (isNaturalEnd) app.last.infiniteQuestionsFor100 = session.asked;
+        hudScore.textContent = `Bonnes réponses : ${session.good}/${SETTINGS.infiniteGoal}`;
+        hudMini.textContent = `Questions : ${session.asked}`;
       }
 
-      // Best streak global
-      if (session.bestStreakThisSession > app.progression.bestStreak) {
-        app.profile.bestStreak = session.bestStreakThisSession;
+      hudXP.textContent = `XP +${extraXp}`;
+      hudStreak.textContent = `Streak ${session.streak}`;
+    }
+
+    function lock(lock){
+      session.locked = lock;
+      romajiInput.disabled = lock;
+      [...qcmRow.querySelectorAll("button")].forEach(b => b.disabled = lock);
+      btnCorrection.disabled = lock;
+    }
+
+    function clearAnswerArea(){
+      qcmRow.innerHTML = "";
+      romajiInput.value = "";
+      setFeedback(feedbackEl, "", "");
+      hideCorrection();
+    }
+
+    function showCorrection(data){
+      if (!data) return;
+      correctionWrap.style.display = "flex";
+      correctionPanel.classList.add("show");
+      corrKanji.textContent = data.k;
+      corrOn.textContent = (data.on?.length ? data.on.join(" / ") : "—");
+      corrKun.textContent = (data.kun?.length ? data.kun.join(" / ") : "—");
+      corrMeanings.textContent = (data.m?.length ? data.m.join(" • ") : "—");
+    }
+
+    function hideCorrection(){
+      correctionWrap.style.display = "none";
+      correctionPanel.classList.remove("show");
+      session.correctionData = null;
+    }
+
+    btnCorrection.addEventListener("click", () => {
+      if (!session.correctionData) return;
+      correctionPanel.classList.toggle("show");
+      if (correctionPanel.classList.contains("show")) {
+        showCorrection(session.correctionData);
+      }
+    });
+
+    // ============================
+    // END SESSION
+    // ============================
+    function endSession(){
+      app = loadState();
+
+      // best streak global
+      if (session.bestStreakThisSession > (app.progression?.bestStreak ?? 0)) {
+        app.progression.bestStreak = session.bestStreakThisSession;
+      }
+
+      // sauvegardes "last"
+      if (mode === "normal") {
+        app.last.normalScore = session.good;
+      } else if (mode === "infini") {
+        app.last.infiniteQuestionsFor100 = session.asked;
+      }
+
+      // EXAMEN de rang (KANJI)
+      if (mode === "exam" && pack === "kanji") {
+        const pass = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
+        if (pass) {
+          app = unlockNextRank(app, session.rank);
+        }
       }
 
       saveState(app);
-      location.href = "./index.html";
+
+      // mini écran de fin (simple)
+      const passText = (mode === "exam")
+        ? (((session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate) ? "✅ Examen réussi !" : "❌ Examen raté.")
+        : "🎉 Session terminée !";
+
+      promptEl.textContent = "Fin";
+      hintEl.textContent = "";
+      inputRow.style.display = "none";
+      qcmRow.style.display = "none";
+      correctionWrap.style.display = "none";
+      correctionPanel.classList.remove("show");
+      setFeedback(feedbackEl, "", passText);
+
+      hudMini.textContent = "";
+      hudXP.textContent = "";
+      hudStreak.textContent = "";
+
+      // boutons fin
+      const footer = document.querySelector(".footer");
+      footer.innerHTML = `
+        <div class="end-actions">
+          <a class="btn primary" href="./index.html">Retour menu</a>
+          <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
+        </div>
+      `;
     }
 
+    // ============================
+    // QUESTION GENERATORS
+    // ============================
     function nextQuestion(){
-      // end conditions
-      if (session.mode === "normal" && session.asked >= SETTINGS.normalQuestions) {
-        stopAndBackToMenu(true);
+      // conditions de fin
+      if (mode === "normal" && session.asked >= SETTINGS.normalQuestions) {
+        endSession();
         return;
       }
-      if (session.mode === "infini" && session.good >= SETTINGS.infiniteGoal) {
-        stopAndBackToMenu(true);
+      if (mode === "exam" && session.asked >= SETTINGS.examQuestions) {
+        endSession();
+        return;
+      }
+      if (mode === "infini" && session.good >= SETTINGS.infiniteGoal) {
+        endSession();
         return;
       }
 
@@ -191,41 +423,51 @@
       session.asked += 1;
       updateHud(0);
 
-      // anti-répétition mode type
-      const type = chooseModePro(session);
-      session.modeType = type;
+      // =========
+      // PACK KANA
+      // =========
+      if (pack === "kana") {
+        // alternance anti répétition sur les 4 types
+        const type = chooseModePro(session);
+        session.modeType = type;
 
-      if (type === "hira_to_romaji"){
-        const [char, romaji] = pickRandomEntry(HIRAGANA);
-        session.kind = "input";
-        session.correct = romaji;
-        promptEl.textContent = `Romaji de ${char}`;
-        inputRow.style.display = "flex";
-        qcmRow.style.display = "none";
-        hintEl.textContent = "Entrée pour valider.";
-        romajiInput.focus();
-      }
-      else if (type === "kata_to_romaji"){
-        const [char, romaji] = pickRandomEntry(KATAKANA);
-        session.kind = "input";
-        session.correct = romaji;
-        promptEl.textContent = `ROMAJI de ${char}`;
-        inputRow.style.display = "flex";
-        qcmRow.style.display = "none";
-        hintEl.textContent = "Entrée pour valider.";
-        romajiInput.focus();
-      }
-      else if (type === "romaji_to_hira"){
-        const [char, romaji] = pickRandomEntry(HIRAGANA);
-        session.kind = "qcm";
-        session.correct = char;
-        promptEl.textContent = `Hiragana de ${romaji}`;
-        inputRow.style.display = "none";
-        qcmRow.style.display = "grid";
-        hintEl.textContent = "Clique une réponse.";
-        renderQcm(Object.keys(HIRAGANA), char);
-      }
-      else { // romaji_to_kata
+        if (type === "hira_to_romaji"){
+          const [char, romaji] = pickRandomEntry(HIRAGANA);
+          session.kind = "input";
+          session.correct = romaji;
+          promptEl.textContent = `Romaji de ${char}`;
+          inputRow.style.display = "flex";
+          qcmRow.style.display = "none";
+          hintEl.textContent = "Entrée pour valider.";
+          romajiInput.focus();
+          return;
+        }
+
+        if (type === "kata_to_romaji"){
+          const [char, romaji] = pickRandomEntry(KATAKANA);
+          session.kind = "input";
+          session.correct = romaji;
+          promptEl.textContent = `ROMAJI de ${char}`;
+          inputRow.style.display = "flex";
+          qcmRow.style.display = "none";
+          hintEl.textContent = "Entrée pour valider.";
+          romajiInput.focus();
+          return;
+        }
+
+        if (type === "romaji_to_hira"){
+          const [char, romaji] = pickRandomEntry(HIRAGANA);
+          session.kind = "qcm";
+          session.correct = char;
+          promptEl.textContent = `Hiragana de ${romaji}`;
+          inputRow.style.display = "none";
+          qcmRow.style.display = "grid";
+          hintEl.textContent = "Clique une réponse.";
+          renderQcm(Object.keys(HIRAGANA), char);
+          return;
+        }
+
+        // romaji_to_kata
         const [char, romaji] = pickRandomEntry(KATAKANA);
         session.kind = "qcm";
         session.correct = char;
@@ -234,7 +476,66 @@
         qcmRow.style.display = "grid";
         hintEl.textContent = "Clique une réponse.";
         renderQcm(Object.keys(KATAKANA), char);
+        return;
       }
+
+      // ==========
+      // PACK KANJI
+      // ==========
+      if (pack === "kanji") {
+        // Pour l’instant: QCM "kanji -> signification"
+        // (plus tard: on filtrera selon rank/grade plafond + 2141 kanji)
+        const item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)];
+
+        // bonne réponse = un des sens
+        const correctMeaning = item.m[Math.floor(Math.random() * item.m.length)];
+        session.correct = correctMeaning;
+        session.kind = "qcm";
+        session.correctionData = item;
+
+        promptEl.textContent = item.k;
+        inputRow.style.display = "none";
+        qcmRow.style.display = "grid";
+        hintEl.textContent = "Clique une signification.";
+
+        // distracteurs: tirés dans d’autres kanji (en évitant meanings du bon kanji)
+        const allMeanings = [];
+        for (const k of KANJI_DEMO) {
+          if (k.k === item.k) continue;
+          for (const m of k.m) allMeanings.push(m);
+        }
+
+        const distractors = [];
+        const forbidden = new Set(item.m.map(x => x.toLowerCase()));
+        while (distractors.length < 3 && allMeanings.length) {
+          const cand = allMeanings[Math.floor(Math.random() * allMeanings.length)];
+          if (!cand) continue;
+          const key = cand.toLowerCase();
+          if (key === correctMeaning.toLowerCase()) continue;
+          if (forbidden.has(key)) continue;
+          if (distractors.some(d => d.toLowerCase() === key)) continue;
+          distractors.push(cand);
+        }
+
+        const choices = [...distractors, correctMeaning];
+        shuffle(choices);
+
+        qcmRow.innerHTML = "";
+        choices.forEach(ch => {
+          const b = document.createElement("button");
+          b.className = "btn qcm-btn";
+          b.textContent = ch;
+          b.addEventListener("click", () => submit(ch, b));
+          qcmRow.appendChild(b);
+        });
+
+        return;
+      }
+
+      // pack inconnu -> fallback
+      promptEl.textContent = "Erreur";
+      hintEl.textContent = "pack inconnu";
+      endSession();
     }
 
     function renderQcm(allChars, correctChar){
@@ -254,11 +555,8 @@
 
       const ok = (value === session.correct);
 
-      // stats: per-mode + per-kana errors
+      // app state
       app = loadState();
-
-      // increment asked per mode
-      app.stats.byMode[session.modeType].asked += 1;
 
       let xpGain = 0;
 
@@ -267,49 +565,50 @@
         session.streak += 1;
         session.bestStreakThisSession = Math.max(session.bestStreakThisSession, session.streak);
 
-        app.stats.byMode[session.modeType].correct += 1;
+        // XP simple (on gardera ta logique plus tard)
+        xpGain = 10 + Math.min(session.streak, 10);
+        if (!app.progression) app.progression = { unlockedRank:"E", xp:0, bestStreak:0 };
+        app.progression.xp += xpGain;
 
-        // XP
-        xpGain = 10 + Math.min(session.streak, 10); // streak gives a small bonus
-        const awards = awardXPAndBadges(app, xpGain, { ok:true, session });
-
-        setFeedback(feedbackEl, "good", `✅ Correct`);
+        setFeedback(feedbackEl, "good", "✅ Correct");
         updateHud(xpGain);
-
-        // badges might update; keep app updated
-        app = awards;
       } else {
         session.streak = 0;
-
-        app.stats.byMode[session.modeType].wrong += 1;
-
-        // per-kana wrong tracking
-        // for qcm modes: wrong means "correct char" was missed
-        // for input modes: track by "prompt character"? We don't store it here, so we track by expected answer.
-        // Simpler: only track per-kana for qcm (where correct is a kana char)
-        if (session.kind === "qcm") {
-          app.stats.wrongKana[session.correct] = (app.stats.wrongKana[session.correct] || 0) + 1;
-        }
-
         const extra = SETTINGS.showCorrectOnWrong ? ` (rép : ${session.correct})` : "";
         setFeedback(feedbackEl, "bad", `❌ Faux${extra}`);
         updateHud(0);
       }
 
       saveState(app);
-      updateHud(xpGain);
+
+      // correction disponible seulement pour kanji
+      if (pack === "kanji" && session.correctionData) {
+        correctionWrap.style.display = "flex";
+        // par défaut on ne l’ouvre pas automatiquement : bouton "Correction"
+        correctionPanel.classList.remove("show");
+        corrKanji.textContent = session.correctionData.k;
+        corrOn.textContent = (session.correctionData.on?.length ? session.correctionData.on.join(" / ") : "—");
+        corrKun.textContent = (session.correctionData.kun?.length ? session.correctionData.kun.join(" / ") : "—");
+        corrMeanings.textContent = (session.correctionData.m?.length ? session.correctionData.m.join(" • ") : "—");
+      }
 
       lock(true);
-      if (focusEl && focusEl.animate){
-        try{ focusEl.animate([{transform:"scale(1)"},{transform:"scale(.98)"},{transform:"scale(1)"}], {duration:140}); }catch{}
-      }
+
+      // auto next
       setTimeout(nextQuestion, SETTINGS.autoNextMs);
     }
 
-    // start session
+    function shuffle(arr){
+      for(let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // start
     updateHud(0);
     nextQuestion();
   </script>
 </body>
 </html>
-
