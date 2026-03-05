@@ -278,7 +278,9 @@
       lastMode: null,
       locked: false,
       correct: null,
-      correctionData: null
+      correctionData: null,
+      examQueue: null,
+      examIndex: 0,
     };
 
     function isKanjiPack(){ return session.pack === "kanji"; }
@@ -554,50 +556,125 @@
         qcmRow.appendChild(b);
       }
     }
+  function gradeValue(rank){ // E=1 ... 覚=7 (selon ton mapping)
+  const map = { "E":1, "D":2, "C":3, "B":4, "A":5, "S":6, "覚":7 };
+  return map[rank] ?? 1;
+}
 
-    function askKanji(){
-      const item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)];
-      const correctMeaning = item.m[Math.floor(Math.random() * item.m.length)];
+function getKanjiForRank(rank){
+  const maxG = gradeValue(rank);
+  // IMPORTANT: ici, ton dataset kanji doit avoir une propriété "g" = grade numérique
+  // Exemple: {"k":"海","g":2,...}
+  return KANJI_DEMO.filter(x => x.g === maxG);
+}
 
-      session.correct = correctMeaning;
-      session.correctionData = item;
+function getKanjiBelowRank(rank){
+  const maxG = gradeValue(rank);
+  return KANJI_DEMO.filter(x => x.g < maxG);
+}
 
-      promptEl.textContent = item.k;
-      inputRow.style.display = "none";
-      qcmRow.style.display = "grid";
-      hintEl.textContent = "Clique une signification. Puis: Correction / Suivant.";
+function uniqueShuffle(arr){
+  // enlève doublons par kanji "k"
+  const seen = new Set();
+  const out = [];
+  for (const it of arr){
+    if (seen.has(it.k)) continue;
+    seen.add(it.k);
+    out.push(it);
+  }
+  return shuffle(out);
+}
 
-      // distracteurs
-      const forbidden = new Set(item.m.map(x => x.toLowerCase()));
-      const pool = [];
-      for (const k of KANJI_DEMO){
-        if (k.k === item.k) continue;
-        for (const m of k.m) pool.push(m);
-      }
+function sample(arr, n){
+  const copy = [...arr];
+  shuffle(copy);
+  return copy.slice(0, Math.min(n, copy.length));
+}
+    function buildExamQueue(rank){
 
-      const distractors = [];
-      while (distractors.length < 3 && pool.length){
-        const cand = pool[Math.floor(Math.random() * pool.length)];
-        const key = String(cand).toLowerCase();
-        if (key === correctMeaning.toLowerCase()) continue;
-        if (forbidden.has(key)) continue;
-        if (distractors.some(d => d.toLowerCase() === key)) continue;
-        distractors.push(cand);
-      }
+  const map = { "E":1, "D":2, "C":3, "B":4, "A":5, "S":6, "覚":7 };
+  const gradeValue = map[rank] ?? 1;
 
-      const choices = [...distractors, correctMeaning];
-      shuffle(choices);
+  const current = KANJI_DEMO.filter(k => k.g === gradeValue);
+  const previous = KANJI_DEMO.filter(k => k.g < gradeValue);
 
-      qcmRow.innerHTML = "";
-      for (const ch of choices){
-        const b = document.createElement("button");
-        b.className = "btn qcm-btn";
-        b.textContent = ch;
-        b.addEventListener("click", () => submit(ch));
-        qcmRow.appendChild(b);
-      }
+  // mélange
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
+    return arr;
+  }
 
+  const prevSample = shuffle([...previous]).slice(0,10);
+
+  return shuffle([...current, ...prevSample]);
+}
+    
+   function askKanji(){
+
+  let item;
+
+  // mode examen
+  if (session.mode === "exam" && session.examQueue){
+    item = session.examQueue[session.examIndex++];
+  }
+  else{
+    item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)];
+  }
+
+  if (!item) return endSession();
+
+  const correctMeaning = item.m[Math.floor(Math.random() * item.m.length)];
+
+  session.correct = correctMeaning;
+  session.correctionData = item;
+
+  promptEl.textContent = item.k;
+
+  inputRow.style.display = "none";
+  qcmRow.style.display = "grid";
+
+  hintEl.textContent = "Clique une signification. Puis: Correction / Suivant.";
+
+  const forbidden = new Set(item.m.map(x => x.toLowerCase()));
+
+  const pool = [];
+  for (const k of KANJI_DEMO){
+    if (k.k === item.k) continue;
+    for (const m of k.m) pool.push(m);
+  }
+
+  const distractors = [];
+
+  while (distractors.length < 3 && pool.length){
+    const cand = pool[Math.floor(Math.random() * pool.length)];
+    const key = cand.toLowerCase();
+
+    if (forbidden.has(key)) continue;
+    if (distractors.includes(cand)) continue;
+
+    distractors.push(cand);
+  }
+
+  const choices = [...distractors, correctMeaning];
+
+  for (let i = choices.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [choices[i], choices[j]] = [choices[j], choices[i]];
+  }
+
+  qcmRow.innerHTML = "";
+
+  for (const ch of choices){
+    const b = document.createElement("button");
+    b.className = "btn qcm-btn";
+    b.textContent = ch;
+    b.addEventListener("click", () => submit(ch));
+    qcmRow.appendChild(b);
+  }
+}
     // ============================
     // SUBMIT
     // ============================
@@ -663,14 +740,21 @@
     // ============================
     // START ROUTER
     // ============================
-    function startQuiz(){
-      kanaSelect.style.display = "none";
-      kanjiSelect.style.display = "none";
-      showQuizUI();
-      updateChip();
-      updateHud(0);
-      nextQuestion();
-    }
+function startQuiz(){
+
+  // INITIALISATION EXAMEN
+  if (session.pack === "kanji" && session.mode === "exam") {
+    session.examQueue = buildExamQueue(session.rank);
+    session.examIndex = 0;
+  }
+
+  kanaSelect.style.display = "none";
+  kanjiSelect.style.display = "none";
+  showQuizUI();
+  updateChip();
+  updateHud(0);
+  nextQuestion();
+}
 
     // router
     if (pack === "kana" && !modeParam){
@@ -686,3 +770,4 @@
   </script>
 </body>
 </html>
+
