@@ -177,18 +177,10 @@
     } from "./assets/app.js";
 
     // ============================
-    // DEMO KANJI (placeholder)
+    // KANJI
     // ============================
-    const KANJI_DEMO = [
-      {"k":"日","g":1,"m":["jour","soleil"],"on":["ニチ","ジツ"],"kun":["ひ","か"]},
-      {"k":"人","g":1,"m":["personne","humain"],"on":["ジン","ニン"],"kun":["ひと"]},
-      {"k":"水","g":1,"m":["eau"],"on":["スイ"],"kun":["みず"]},
-      {"k":"山","g":1,"m":["montagne"],"on":["サン"],"kun":["やま"]},
-      {"k":"海","g":2,"m":["mer","océan"],"on":["カイ"],"kun":["うみ"]},
-      {"k":"森","g":1,"m":["forêt"],"on":["シン"],"kun":["もり"]},
-      {"k":"火","g":1,"m":["feu"],"on":["カ"],"kun":["ひ"]},
-      {"k":"天","g":2,"m":["ciel","paradis"],"on":["テン"],"kun":[]}
-    ];
+    import { KANJI } from "./assets/kanji.js";
+    const KANJI_DEMO = KANJI
 
     // ============================
     // PARAMS
@@ -772,6 +764,7 @@ function startQuiz(){
   </script>
 </body>
 </html>
+
 
 
 
