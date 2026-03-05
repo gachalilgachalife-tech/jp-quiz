@@ -746,6 +746,8 @@ function startQuiz(){
   if (session.pack === "kanji" && session.mode === "exam") {
     session.examQueue = buildExamQueue(session.rank);
     session.examIndex = 0;
+
+    SETTINGS.examQuestions = session.examQueue.length;
   }
 
   kanaSelect.style.display = "none";
@@ -770,4 +772,5 @@ function startQuiz(){
   </script>
 </body>
 </html>
+
 
