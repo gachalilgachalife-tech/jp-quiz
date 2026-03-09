@@ -29,7 +29,9 @@
       margin-right: auto;
     }
 
-    .correction-panel.show { display: block; }
+    .correction-panel.show {
+      display: block;
+    }
 
     .corr-title {
       font-weight: 900;
@@ -65,10 +67,12 @@
       font-weight: 800;
     }
 
-    .corr-value, .corr-list {
+    .corr-value,
+    .corr-list {
       font-size: 16px;
       font-weight: 900;
       margin-top: 4px;
+      line-height: 1.4;
     }
   </style>
 </head>
@@ -100,6 +104,9 @@
               <a class="btn secondary" href="./quiz.html?pack=kana&mode=normal">Normal (10)</a>
               <a class="btn secondary" href="./quiz.html?pack=kana&mode=infini">Infini (objectif 100)</a>
             </div>
+            <p class="hint" style="margin:10px 0 0;">
+              Kana : passage automatique à la question suivante.
+            </p>
           </div>
         </div>
 
@@ -127,6 +134,9 @@
               <button class="btn secondary" type="button" data-kmode="infini">Infini</button>
               <button class="btn primary" type="button" data-kmode="exam">Examen</button>
             </div>
+            <p class="hint" style="margin:10px 0 0;">
+              Normal / Infini : seulement le grade choisi. Examen : grade choisi + 10 des grades précédents.
+            </p>
           </div>
         </div>
 
@@ -213,7 +223,7 @@
       isRankUnlocked
     } from "./assets/app.js";
 
-    const KANJI_DEMO = KANJI
+    const KANJI_DATA = KANJI
       .map(item => ({
         ...item,
         m: Array.isArray(item.m) ? item.m.map(x => String(x).trim()).filter(Boolean) : [],
@@ -221,10 +231,6 @@
         kun: Array.isArray(item.kun) ? item.kun.map(x => String(x).trim()).filter(Boolean) : []
       }))
       .filter(item => item.k && item.m.length > 0);
-    
-    console.log("KANJI total importés :", KANJI.length);
-console.log("KANJI utilisables :", KANJI_DEMO.length);
-console.log("Exemples :", KANJI_DEMO.slice(0, 15));
 
     const url = new URL(location.href);
     const pack = url.searchParams.get("pack") || "kana";
@@ -295,14 +301,26 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
       examIndex: 0
     };
 
-    function buildExamQueue(rank) {
+    function getGradeValue(rank) {
       const map = { E:1, D:2, C:3, B:4, A:5, S:6, 覚:7 };
-      const gradeValue = map[rank] ?? 1;
+      return map[rank] ?? 1;
+    }
 
-      const current = KANJI_DEMO.filter(k => k.g === gradeValue);
-      const previous = KANJI_DEMO.filter(k => k.g < gradeValue);
+    function getKanjiPoolForRank(rank) {
+      const gradeValue = getGradeValue(rank);
+      if (gradeValue === 7) return KANJI_DATA;
+      return KANJI_DATA.filter(k => k.g === gradeValue);
+    }
 
+    function buildExamQueue(rank) {
+      const gradeValue = getGradeValue(rank);
+      const current = gradeValue === 7
+        ? KANJI_DATA
+        : KANJI_DATA.filter(k => k.g === gradeValue);
+
+      const previous = KANJI_DATA.filter(k => k.g < gradeValue);
       const prevSample = [...previous].sort(() => Math.random() - 0.5).slice(0, 10);
+
       return [...current, ...prevSample].sort(() => Math.random() - 0.5);
     }
 
@@ -334,7 +352,9 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
 
     function updateChip() {
       const prettyPack = session.pack === "kanji" ? "KANJI" : "KANA";
-      const prettyMode = session.mode === "infini" ? "Infini" : (session.mode === "exam" ? "Examen" : "Normal");
+      const prettyMode = session.mode === "infini"
+        ? "Infini"
+        : (session.mode === "exam" ? "Examen" : "Normal");
       modeChip.textContent = `${prettyPack} — ${prettyMode}`;
     }
 
@@ -343,7 +363,7 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
         hudScore.textContent = `Score : ${session.good}/${SETTINGS.examQuestions}`;
         hudMini.textContent = `Question : ${session.asked}/${SETTINGS.examQuestions}`;
       } else if (session.mode === "normal") {
-        hudScore.textContent = `Score : ${session.good}`;
+        hudScore.textContent = `Score : ${session.good}/${SETTINGS.normalQuestions}`;
         hudMini.textContent = `Question : ${session.asked}/${SETTINGS.normalQuestions}`;
       } else {
         hudScore.textContent = `Bonnes réponses : ${session.good}/${SETTINGS.infiniteGoal}`;
@@ -521,12 +541,22 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
       if (session.mode === "exam" && session.examQueue) {
         item = session.examQueue[session.examIndex++];
       } else {
-        item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)];
+        const pool = getKanjiPoolForRank(session.rank);
+
+        if (!pool || pool.length === 0) {
+          promptEl.textContent = "Erreur";
+          hintEl.textContent = "Aucun kanji trouvé pour ce rang.";
+          return;
+        }
+
+        item = pool[Math.floor(Math.random() * pool.length)];
       }
 
       if (!item) return endSession();
 
       const validMeanings = item.m.filter(Boolean);
+      if (validMeanings.length === 0) return askKanji();
+
       const correctMeaning = validMeanings[Math.floor(Math.random() * validMeanings.length)];
 
       session.correct = correctMeaning;
@@ -536,7 +566,7 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
       qcmRow.style.display = "grid";
       hintEl.textContent = "Clique une signification. Puis : Correction / Suivant.";
 
-      const meaningPool = KANJI_DEMO
+      const meaningPool = KANJI_DATA
         .flatMap(k => k.m)
         .map(x => String(x).trim())
         .filter(Boolean);
