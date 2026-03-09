@@ -221,7 +221,11 @@
         kun: Array.isArray(item.kun) ? item.kun.map(x => String(x).trim()).filter(Boolean) : []
       }))
       .filter(item => item.k && item.m.length > 0);
-
+    
+console.log("KANJI total importés :", KANJI.length);
+console.log("KANJI utilisables :", KANJI_DEMO.length);
+console.log("Exemples :", KANJI_DEMO.slice(0, 15));
+    
     const url = new URL(location.href);
     const pack = url.searchParams.get("pack") || "kana";
     const modeParam = url.searchParams.get("mode");
@@ -663,3 +667,4 @@
   </script>
 </body>
 </html>
+
