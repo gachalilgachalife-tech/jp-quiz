@@ -28,6 +28,83 @@ export function defaultState() {
   };
 }
 
+export const RANK_ORDER = ["E", "D", "C", "B", "A", "S", "覚"];
+
+export const RANK_XP_CAP = {
+  E: 300,
+  D: 500,
+  C: 800,
+  B: 1200,
+  A: 1800,
+  S: 2600,
+  覚: 0
+};
+
+export function getNextRank(rank) {
+  const i = RANK_ORDER.indexOf(rank);
+  if (i < 0 || i >= RANK_ORDER.length - 1) return null;
+  return RANK_ORDER[i + 1];
+}
+
+export function getLevelFromXP(rank, xp) {
+  const cap = RANK_XP_CAP[rank];
+  if (!cap || cap <= 0) return 5;
+
+  const ratio = xp / cap;
+
+  if (ratio >= 0.8) return 5;
+  if (ratio >= 0.6) return 4;
+  if (ratio >= 0.4) return 3;
+  if (ratio >= 0.2) return 2;
+  return 1;
+}
+
+export function getStreakBonus(streak) {
+  if (streak >= 10) return 30;
+  if (streak >= 5) return 15;
+  if (streak >= 3) return 5;
+  return 0;
+}
+
+export function getSessionXpGain(session) {
+  if (session.mode === "exam") return 0;
+
+  const basePerCorrect = session.pack === "kanji" ? 5 : 2;
+  const baseXp = session.good * basePerCorrect;
+  const streakBonus = getStreakBonus(session.bestStreakThisSession || 0);
+
+  return baseXp + streakBonus;
+}
+
+export function applyXpToProgression(progression, xpGain) {
+  const cap = RANK_XP_CAP[progression.currentRank];
+  if (!cap || cap <= 0) return progression;
+
+  progression.rankXp = Math.min(progression.rankXp + xpGain, cap);
+  progression.level = getLevelFromXP(progression.currentRank, progression.rankXp);
+
+  return progression;
+}
+
+export function canTakeCurrentRankExam(progression) {
+  const cap = RANK_XP_CAP[progression.currentRank];
+  if (!cap || cap <= 0) return false;
+
+  return progression.rankXp >= cap && progression.level === 5;
+}
+
+export function rankUp(progression) {
+  const next = getNextRank(progression.currentRank);
+  if (!next) return progression;
+
+  progression.currentRank = next;
+  progression.unlockedRank = next;
+  progression.rankXp = 0;
+  progression.level = 1;
+
+  return progression;
+}
+
 export function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -165,4 +242,5 @@ export function unlockNextRank(appState, currentRank) {
   }
   return s;
 }
+
 
