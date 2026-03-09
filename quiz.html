@@ -222,10 +222,10 @@
       }))
       .filter(item => item.k && item.m.length > 0);
     
-console.log("KANJI total importés :", KANJI.length);
+    console.log("KANJI total importés :", KANJI.length);
 console.log("KANJI utilisables :", KANJI_DEMO.length);
 console.log("Exemples :", KANJI_DEMO.slice(0, 15));
-    
+
     const url = new URL(location.href);
     const pack = url.searchParams.get("pack") || "kana";
     const modeParam = url.searchParams.get("mode");
@@ -521,7 +521,7 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
       if (session.mode === "exam" && session.examQueue) {
         item = session.examQueue[session.examIndex++];
       } else {
-      item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)};
+        item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)];
       }
 
       if (!item) return endSession();
@@ -667,5 +667,3 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
   </script>
 </body>
 </html>
-
-
