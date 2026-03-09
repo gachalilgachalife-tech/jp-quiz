@@ -9,7 +9,13 @@ export function defaultState() {
   return {
     ui: { theme: "dark" },
     last: { normalScore: null, infiniteQuestionsFor100: null },
-    progression: { unlockedRank: "E", xp: 0, bestStreak: 0 },
+    progression: {
+  currentRank: "E",
+  unlockedRank: "E",
+  rankXp: 0,
+  level: 1,
+  bestStreak: 0
+},
     // stats optionnelles (pas obligatoire pour fonctionner)
     stats: {
       byMode: {
@@ -159,3 +165,4 @@ export function unlockNextRank(appState, currentRank) {
   }
   return s;
 }
+
