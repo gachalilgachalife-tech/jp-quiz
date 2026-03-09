@@ -521,8 +521,7 @@ console.log("Exemples :", KANJI_DEMO.slice(0, 15));
       if (session.mode === "exam" && session.examQueue) {
         item = session.examQueue[session.examIndex++];
       } else {
-      const pool = KANJI_DEMO.filter(k => k.g === gradeValue);
-item = pool[Math.floor(Math.random() * pool.length)];
+      item = KANJI_DEMO[Math.floor(Math.random() * KANJI_DEMO.length)};
       }
 
       if (!item) return endSession();
