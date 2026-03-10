@@ -71,10 +71,38 @@
     applyTheme(app.ui?.theme ?? "dark");
 
     // progression (nouveau modèle)
-    document.getElementById("rank").textContent = app.progression?.unlockedRank ?? "E";
-    document.getElementById("xp").textContent = app.progression?.xp ?? 0;
-    document.getElementById("bestStreak").textContent = app.progression?.bestStreak ?? 0;
+    const progression = app.progression || {
+  currentRank: "E",
+  unlockedRank: "E",
+  rankXp: 0,
+  level: 1,
+  bestStreak: 0
+};
 
+const RANK_XP_CAP = {
+  E: 300,
+  D: 500,
+  C: 800,
+  B: 1200,
+  A: 1800,
+  S: 2600,
+  覚: 0
+};
+
+document.getElementById("rank").textContent = progression.currentRank ?? "E";
+document.getElementById("level").textContent = progression.level ?? 1;
+document.getElementById("bestStreak").textContent = progression.bestStreak ?? 0;
+
+const cap = RANK_XP_CAP[progression.currentRank] ?? 0;
+const currentXp = progression.rankXp ?? 0;
+
+if (cap > 0) {
+  document.getElementById("xpText").textContent = `${currentXp} / ${cap}`;
+  document.getElementById("xpFill").style.width = `${Math.min(100, (currentXp / cap) * 100)}%`;
+} else {
+  document.getElementById("xpText").textContent = "MAX";
+  document.getElementById("xpFill").style.width = "100%";
+}
     // derniers scores
     document.getElementById("lastNormal").textContent =
       (app.last && app.last.normalScore != null) ? app.last.normalScore : "—";
@@ -95,3 +123,4 @@
   </script>
 </body>
 </html>
+
