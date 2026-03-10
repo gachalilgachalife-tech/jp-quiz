@@ -1,235 +1,332 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JP Quiz</title>
-  <link rel="stylesheet" href="./assets/style.css" />
-  <style>
-    .level-progress {
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+// assets/app.js
+
+const STORAGE_KEY = "jpQuizState";
+
+// ==============================
+// ÉTAT PAR DÉFAUT
+// ==============================
+export function defaultState() {
+  return {
+    ui: {
+      theme: "dark"
+    },
+
+    last: {
+      normalScore: null,
+      infiniteQuestionsFor100: null
+    },
+
+    progression: {
+      currentRank: "E",
+      unlockedRank: "E",
+      levelXp: 0,
+      level: 1,
+      bestStreak: 0
+    },
+
+    stats: {
+      byMode: {
+        hira_to_romaji: { asked: 0, correct: 0, wrong: 0 },
+        romaji_to_hira: { asked: 0, correct: 0, wrong: 0 },
+        kata_to_romaji: { asked: 0, correct: 0, wrong: 0 },
+        romaji_to_kata: { asked: 0, correct: 0, wrong: 0 }
+      }
+    }
+  };
+}
+
+// ==============================
+// CHARGEMENT / SAUVEGARDE
+// ==============================
+export function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+
+    const parsed = JSON.parse(raw);
+    const base = defaultState();
+
+    return {
+      ...base,
+      ...parsed,
+      ui: {
+        ...base.ui,
+        ...(parsed.ui || {})
+      },
+      last: {
+        ...base.last,
+        ...(parsed.last || {})
+      },
+      progression: {
+        ...base.progression,
+        ...(parsed.progression || {})
+      },
+      stats: {
+        ...base.stats,
+        ...(parsed.stats || {})
+      }
+    };
+  } catch {
+    return defaultState();
+  }
+}
+
+export function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ==============================
+// THÈME / PLEIN ÉCRAN
+// ==============================
+export function applyTheme(theme) {
+  const safeTheme = theme === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = safeTheme;
+}
+
+export function requestFullscreenToggle() {
+  const el = document.documentElement;
+
+  if (!document.fullscreenElement) {
+    el.requestFullscreen?.().catch(() => {});
+  } else {
+    document.exitFullscreen?.().catch(() => {});
+  }
+}
+
+// ==============================
+// FEEDBACK UI
+// ==============================
+export function setFeedback(el, cls, text) {
+  if (!el) return;
+  el.classList.remove("good", "bad");
+  if (cls) el.classList.add(cls);
+  el.textContent = text || "";
+}
+
+// ==============================
+// RANDOM / QCM
+// ==============================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export function pickRandomEntry(obj) {
+  const keys = Object.keys(obj);
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  return [key, obj[key]];
+}
+
+export function buildQcmChoices(allChoices, correctChoice, count = 5) {
+  const pool = allChoices.filter(choice => choice !== correctChoice);
+  shuffle(pool);
+
+  const picked = pool.slice(0, Math.max(0, count - 1));
+  const out = [...picked, correctChoice];
+
+  return shuffle(out);
+}
+
+// ==============================
+// MODES KANA
+// ==============================
+const KANA_MODES = [
+  "hira_to_romaji",
+  "romaji_to_hira",
+  "kata_to_romaji",
+  "romaji_to_kata"
+];
+
+export function chooseModePro(session) {
+  const last = session.lastMode || null;
+
+  let pool = KANA_MODES.filter(mode => mode !== last);
+
+  if (last) {
+    const lastWasInput = last.endsWith("_to_romaji");
+    const preferredWantInput = !lastWasInput;
+
+    const preferred = pool.filter(mode => mode.endsWith("_to_romaji") === preferredWantInput);
+    if (preferred.length > 0) {
+      pool = preferred;
+    }
+  }
+
+  const chosen = pool[Math.floor(Math.random() * pool.length)];
+  session.lastMode = chosen;
+  return chosen;
+}
+
+// ==============================
+// RANGS
+// ==============================
+export const RANK_ORDER = ["E", "D", "C", "B", "A", "S", "覚"];
+export const RANKS = RANK_ORDER;
+
+export function isRankUnlocked(unlockedRank, targetRank) {
+  const u = RANK_ORDER.indexOf(unlockedRank || "E");
+  const t = RANK_ORDER.indexOf(targetRank);
+  if (t === -1) return false;
+  return t <= (u === -1 ? 0 : u);
+}
+
+export function getNextRank(rank) {
+  const i = RANK_ORDER.indexOf(rank);
+  if (i < 0 || i >= RANK_ORDER.length - 1) return null;
+  return RANK_ORDER[i + 1];
+}
+
+// ==============================
+// COMPTEUR DE KANJI PAR RANG
+// ==============================
+export function getGradeValueFromRank(rank) {
+  const map = {
+    E: 1,
+    D: 2,
+    C: 3,
+    B: 4,
+    A: 5,
+    S: 6,
+    覚: 7
+  };
+
+  return map[rank] ?? 1;
+}
+
+export function countKanjiUpToRank(rank, kanjiList) {
+  const maxGrade = getGradeValueFromRank(rank);
+
+  if (!Array.isArray(kanjiList)) return 0;
+
+  if (maxGrade === 7) {
+    return kanjiList.length;
+  }
+
+  return kanjiList.filter(k => Number(k.g) <= maxGrade).length;
+}
+
+// ==============================
+// XP PAR NIVEAU
+// ==============================
+export function getRankMultiplier(rank, kanjiList) {
+  const totalKanji = countKanjiUpToRank(rank, kanjiList);
+  const raw = totalKanji * 0.02;
+  return Math.max(1, Math.round(raw));
+}
+
+export function getLevelXpCap(rank, level, kanjiList) {
+  const safeLevel = Math.min(5, Math.max(1, Number(level) || 1));
+  const multiplier = getRankMultiplier(rank, kanjiList);
+
+  return safeLevel * 100 * multiplier;
+}
+
+// ==============================
+// XP GAGNÉE PAR DIFFICULTÉ
+// ==============================
+export function getXpForKanjiGrade(grade) {
+  const xpTable = {
+    1: 5,
+    2: 6,
+    3: 7,
+    4: 8,
+    5: 9,
+    6: 10,
+    7: 12
+  };
+
+  return xpTable[Number(grade)] ?? 5;
+}
+
+// ==============================
+// BONUS DE STREAK
+// ==============================
+export function getStreakBonus(streak) {
+  if (streak >= 10) return 30;
+  if (streak >= 5) return 15;
+  if (streak >= 3) return 5;
+  return 0;
+}
+
+// Cette fonction sert ici uniquement au bonus de fin de session.
+export function getSessionXpGain(session) {
+  if (session.mode === "exam") return 0;
+  return getStreakBonus(session.bestStreakThisSession || 0);
+}
+
+// ==============================
+// APPLICATION DE L'XP AU NIVEAU
+// ==============================
+export function applyXpToLevel(progression, xpGain, kanjiList) {
+  if (!progression) return progression;
+
+  const currentRank = progression.currentRank || "E";
+  let currentLevel = Number(progression.level) || 1;
+  let currentXp = Number(progression.levelXp) || 0;
+
+  if (currentLevel >= 5) {
+    const cap = getLevelXpCap(currentRank, 5, kanjiList);
+    progression.level = 5;
+    progression.levelXp = Math.min(currentXp + xpGain, cap);
+    return progression;
+  }
+
+  currentXp += xpGain;
+
+  while (currentLevel < 5) {
+    const cap = getLevelXpCap(currentRank, currentLevel, kanjiList);
+
+    if (currentXp < cap) {
+      break;
     }
 
-    .level-progress-bar {
-      width: 100%;
-      height: 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
-      overflow: hidden;
-    }
+    currentXp -= cap;
+    currentLevel += 1;
+  }
 
-    .level-progress-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, var(--primary), var(--primary2));
-      transition: width .25s ease;
-    }
+  if (currentLevel >= 5) {
+    const capLevel5 = getLevelXpCap(currentRank, 5, kanjiList);
+    progression.level = 5;
+    progression.levelXp = Math.min(currentXp, capLevel5);
+  } else {
+    progression.level = currentLevel;
+    progression.levelXp = currentXp;
+  }
 
-    .level-progress-text {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
+  return progression;
+}
 
-  <header class="topbar">
-    <div class="brand">
-      <span class="dot"></span>
-      <span class="brand-title">JP Quiz</span>
-      <span class="chip">Menu</span>
-    </div>
+// ==============================
+// EXAMEN DU RANG ACTUEL
+// ==============================
+export function canTakeCurrentRankExam(progression, kanjiList) {
+  if (!progression) return false;
 
-    <div class="top-actions">
-      <button id="themeToggle" class="btn secondary" type="button">🌙 / ☀️</button>
-      <button id="fullscreenBtn" class="btn secondary" type="button">Plein écran</button>
-    </div>
-  </header>
+  const currentRank = progression.currentRank || "E";
+  const currentLevel = Number(progression.level) || 1;
+  const currentXp = Number(progression.levelXp) || 0;
 
-  <main class="container">
-    <section class="card center">
+  if (currentLevel < 5) return false;
 
-      <h1 class="title">Quiz Japonais</h1>
-      <p class="sub">
-        Apprends les kana et les kanji avec un système de rang, de niveau, d’examen et de progression.
-      </p>
+  const capLevel5 = getLevelXpCap(currentRank, 5, kanjiList);
 
-      <div class="actions">
-        <a class="btn primary" href="./quiz.html?pack=kana">KANA</a>
-        <a class="btn primary" href="./quiz.html?pack=kanji">KANJI</a>
-      </div>
+  return currentXp >= capLevel5;
+}
 
-      <div class="divider"></div>
+// ==============================
+// RANK UP
+// ==============================
+export function rankUp(progression) {
+  const next = getNextRank(progression.currentRank);
+  if (!next) return progression;
 
-      <div class="grid2">
-        <div class="panel">
-          <div class="panel-title">Progression</div>
-          <div class="panel-body">
-            <div class="kpi">
-              <span>Rang</span>
-              <strong id="rank">—</strong>
-            </div>
+  progression.currentRank = next;
+  progression.unlockedRank = next;
+  progression.level = 1;
+  progression.levelXp = 0;
 
-            <div class="kpi">
-              <span id="levelLabel">Niveau</span>
-              <strong id="levelValue">—</strong>
-            </div>
-
-            <div class="level-progress">
-              <div id="levelProgressText" class="level-progress-text">—</div>
-              <div class="level-progress-bar">
-                <div id="levelProgressFill" class="level-progress-fill"></div>
-              </div>
-            </div>
-
-            <div class="kpi">
-              <span>Meilleure streak</span>
-              <strong id="bestStreak">—</strong>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title">Dernières performances</div>
-          <div class="panel-body">
-            <div class="kpi">
-              <span>Score Normal</span>
-              <strong id="lastNormal">—</strong>
-            </div>
-
-            <div class="kpi">
-              <span>Questions pour 100</span>
-              <strong id="lastInfinite">—</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p class="hint" style="margin-top:14px;">
-        L’examen ne donne pas d’XP. Il sert uniquement à valider le rang suivant quand le niveau 5 est plein.
-      </p>
-
-    </section>
-  </main>
-
-  <script type="module">
-    import {
-      loadState,
-      saveState,
-      applyTheme,
-      requestFullscreenToggle,
-      getLevelXpCap
-    } from "./assets/app.js";
-
-    import { KANJI } from "./assets/kanji.js";
-
-    try {
-      const KANJI_DATA = Array.isArray(KANJI)
-        ? KANJI
-            .map(item => ({
-              ...item,
-              m: Array.isArray(item.m) ? item.m.map(x => String(x).trim()).filter(Boolean) : [],
-              on: Array.isArray(item.on) ? item.on.map(x => String(x).trim()).filter(Boolean) : [],
-              kun: Array.isArray(item.kun) ? item.kun.map(x => String(x).trim()).filter(Boolean) : []
-            }))
-            .filter(item => item.k && item.m.length > 0)
-        : [];
-
-      const app = loadState();
-
-      applyTheme(app.ui?.theme ?? "dark");
-
-      const progression = app.progression || {
-        currentRank: "E",
-        unlockedRank: "E",
-        levelXp: 0,
-        level: 1,
-        bestStreak: 0
-      };
-
-      const rankEl = document.getElementById("rank");
-      const levelLabelEl = document.getElementById("levelLabel");
-      const levelValueEl = document.getElementById("levelValue");
-      const levelProgressTextEl = document.getElementById("levelProgressText");
-      const levelProgressFillEl = document.getElementById("levelProgressFill");
-      const bestStreakEl = document.getElementById("bestStreak");
-      const lastNormalEl = document.getElementById("lastNormal");
-      const lastInfiniteEl = document.getElementById("lastInfinite");
-      const fullscreenBtn = document.getElementById("fullscreenBtn");
-      const themeToggle = document.getElementById("themeToggle");
-
-      const currentRank = progression.currentRank ?? "E";
-      const currentLevel = progression.level ?? 1;
-      const currentXp = progression.levelXp ?? 0;
-
-      let levelCap = 100;
-      try {
-        levelCap = getLevelXpCap(currentRank, currentLevel, KANJI_DATA);
-      } catch {
-        levelCap = 100;
-      }
-
-      if (rankEl) {
-        rankEl.textContent = currentRank;
-      }
-
-      if (levelLabelEl) {
-        levelLabelEl.textContent = `Niveau ${currentLevel}`;
-      }
-
-      if (levelValueEl) {
-        levelValueEl.textContent = `${currentXp} / ${levelCap}`;
-      }
-
-      if (levelProgressTextEl) {
-        levelProgressTextEl.textContent = `Progression du niveau actuel`;
-      }
-
-      if (levelProgressFillEl) {
-        const percent = levelCap > 0
-          ? Math.min(100, Math.round((currentXp / levelCap) * 100))
-          : 100;
-        levelProgressFillEl.style.width = `${percent}%`;
-      }
-
-      if (bestStreakEl) {
-        bestStreakEl.textContent = progression.bestStreak ?? 0;
-      }
-
-      const last = app.last || {
-        normalScore: null,
-        infiniteQuestionsFor100: null
-      };
-
-      if (lastNormalEl) {
-        lastNormalEl.textContent =
-          last.normalScore != null ? last.normalScore : "—";
-      }
-
-      if (lastInfiniteEl) {
-        lastInfiniteEl.textContent =
-          last.infiniteQuestionsFor100 != null ? last.infiniteQuestionsFor100 : "—";
-      }
-
-      fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
-
-      themeToggle?.addEventListener("click", () => {
-        const s = loadState();
-        s.ui = s.ui || { theme: "dark" };
-        s.ui.theme = s.ui.theme === "dark" ? "light" : "dark";
-        saveState(s);
-        applyTheme(s.ui.theme);
-      });
-    } catch (err) {
-      console.error("Erreur index.html :", err);
-    }
-  </script>
-</body>
-</html>
+  return progression;
+}
