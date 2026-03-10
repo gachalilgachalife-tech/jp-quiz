@@ -255,7 +255,15 @@
 
       <div class="answer" id="answer">
         <div class="input-row" id="inputRow" style="display:none;">
-          <input id="romajiInput" type="text" autocomplete="off" spellcheck="false" />
+          <input 
+            id="romajiInput" 
+            type="text" 
+            autocomplete="off" 
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false" 
+            inputmode="latin"
+            enterkeyhint="done"/>
           <span id="capsIndicator" class="caps">CAPS</span>
         </div>
 
@@ -1016,3 +1024,4 @@
   </script>
 </body>
 </html>
+
