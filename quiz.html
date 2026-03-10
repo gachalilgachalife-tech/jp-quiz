@@ -319,11 +319,12 @@
       RANKS,
       isRankUnlocked,
       getSessionXpGain,
-      applyXpToProgression,
       canTakeCurrentRankExam,
       rankUp,
       getNextRank,
-      RANK_XP_CAP
+      getLevelXpCap,
+      applyXpToLevel,
+      getXpForKanjiGrade
     } from "./assets/app.js";
 
     const KANJI_DATA = KANJI
@@ -403,6 +404,7 @@
       good: 0,
       streak: 0,
       bestStreakThisSession: 0,
+      sessionXp: 0,
       lastMode: null,
       locked: false,
       correct: null,
@@ -447,22 +449,25 @@
       return selectedRank === currentRank;
     }
 
-    function getRankProgressPercent(progression) {
-      const cap = RANK_XP_CAP[progression.currentRank] || 0;
-      if (!cap) return 100;
-      return Math.min(100, Math.round((progression.rankXp / cap) * 100));
-    }
+    function getCurrentLevelProgressText(progression) {
+      const currentRank = progression.currentRank || "E";
+      const currentLevel = progression.level || 1;
+      const currentXp = progression.levelXp || 0;
+      const cap = getLevelXpCap(currentRank, currentLevel, KANJI_DATA);
 
-    function getRankProgressText(progression) {
-      const cap = RANK_XP_CAP[progression.currentRank] || 0;
-      if (!cap) return `Rang ${progression.currentRank} • Niveau ${progression.level}`;
-      return `Rang ${progression.currentRank} • Niveau ${progression.level} • ${progression.rankXp} / ${cap} XP`;
+      return {
+        label: `Niveau ${currentLevel}`,
+        value: `${currentXp} / ${cap}`,
+        percent: cap > 0 ? Math.min(100, Math.round((currentXp / cap) * 100)) : 100
+      };
     }
 
     function refreshRankProgressUI() {
       const progression = app.progression;
-      rankProgressLabel.textContent = getRankProgressText(progression);
-      rankProgressFill.style.width = `${getRankProgressPercent(progression)}%`;
+      const info = getCurrentLevelProgressText(progression);
+
+      rankProgressLabel.textContent = `${info.label} • ${info.value}`;
+      rankProgressFill.style.width = `${info.percent}%`;
     }
 
     function showRankUpAnimation(newRank) {
@@ -611,7 +616,7 @@
           }
 
           if (currentExam) {
-            btn.disabled = !canTakeCurrentRankExam(progression);
+            btn.disabled = !canTakeCurrentRankExam(progression, KANJI_DATA);
             return;
           }
 
@@ -652,7 +657,7 @@
       app.progression = app.progression || {
         currentRank: "E",
         unlockedRank: "E",
-        rankXp: 0,
+        levelXp: 0,
         level: 1,
         bestStreak: 0
       };
@@ -675,9 +680,15 @@
       }
 
       let gainedXp = 0;
+
       if (session.mode !== "exam") {
-        gainedXp = getSessionXpGain(session);
-        applyXpToProgression(app.progression, gainedXp);
+        const streakBonus = getSessionXpGain({
+          ...session,
+          good: 0
+        });
+
+        gainedXp = session.sessionXp + streakBonus;
+        applyXpToLevel(app.progression, gainedXp, KANJI_DATA);
       }
 
       let rankUpText = "";
@@ -685,7 +696,7 @@
       if (session.mode === "exam" && session.pack === "kanji") {
         const success = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
         const isCurrent = session.rank === app.progression.currentRank;
-        const allowed = canTakeCurrentRankExam(app.progression);
+        const allowed = canTakeCurrentRankExam(app.progression, KANJI_DATA);
 
         if (success && isCurrent && allowed) {
           const next = getNextRank(app.progression.currentRank);
@@ -706,10 +717,13 @@
       btnNext.style.display = "none";
       btnNext.disabled = true;
 
-      const cap = RANK_XP_CAP[app.progression.currentRank] || 0;
-      const progressText = cap > 0
-        ? `${app.progression.rankXp} / ${cap} XP • Niveau ${app.progression.level}`
-        : `Niveau ${app.progression.level}`;
+      const levelCap = getLevelXpCap(
+        app.progression.currentRank,
+        app.progression.level,
+        KANJI_DATA
+      );
+
+      const progressText = `Niveau ${app.progression.level} • ${app.progression.levelXp} / ${levelCap}`;
 
       let endText = "";
 
@@ -906,6 +920,15 @@
           session.bestStreakThisSession || 0,
           session.streak
         );
+
+        if (session.mode !== "exam") {
+          if (session.pack === "kana") {
+            session.sessionXp += 2;
+          } else if (session.pack === "kanji" && session.correctionData) {
+            session.sessionXp += getXpForKanjiGrade(session.correctionData.g);
+          }
+        }
+
         setFeedback(feedbackEl, "good", "Correct");
       } else {
         session.streak = 0;
