@@ -319,3 +319,21 @@ input:focus{
   gap: 10px;
   flex-wrap:wrap;
 }
+
+#romajiInput {
+  font-size: 16px;
+  line-height: 1.2;
+  width: 100%
+  min-height: 48px;
+}
+
+input,
+textarea,
+select,
+button {
+  font-size: 16px;
+}
+
+html, body {
+  overflow-x: hidden;
+}
