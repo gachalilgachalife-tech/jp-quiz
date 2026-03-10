@@ -1,34 +1,171 @@
 // assets/app.js
 
-// -----------------------------
-// STATE
-// -----------------------------
 const STORAGE_KEY = "jpQuizState";
 
+// ==============================
+// ÉTAT PAR DÉFAUT
+// ==============================
 export function defaultState() {
   return {
-    ui: { theme: "dark" },
-    last: { normalScore: null, infiniteQuestionsFor100: null },
+    ui: {
+      theme: "dark"
+    },
+
+    last: {
+      normalScore: null,
+      infiniteQuestionsFor100: null
+    },
+
     progression: {
-  currentRank: "E",
-  unlockedRank: "E",
-  rankXp: 0,
-  level: 1,
-  bestStreak: 0
-},
-    // stats optionnelles (pas obligatoire pour fonctionner)
+      currentRank: "E",
+      unlockedRank: "E",
+      rankXp: 0,
+      level: 1,
+      bestStreak: 0
+    },
+
     stats: {
       byMode: {
         hira_to_romaji: { asked: 0, correct: 0, wrong: 0 },
         romaji_to_hira: { asked: 0, correct: 0, wrong: 0 },
         kata_to_romaji: { asked: 0, correct: 0, wrong: 0 },
-        romaji_to_kata: { asked: 0, correct: 0, wrong: 0 },
-      },
-    },
+        romaji_to_kata: { asked: 0, correct: 0, wrong: 0 }
+      }
+    }
   };
 }
 
+// ==============================
+// CHARGEMENT / SAUVEGARDE
+// ==============================
+export function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+
+    const parsed = JSON.parse(raw);
+    const base = defaultState();
+
+    return {
+      ...base,
+      ...parsed,
+      ui: {
+        ...base.ui,
+        ...(parsed.ui || {})
+      },
+      last: {
+        ...base.last,
+        ...(parsed.last || {})
+      },
+      progression: {
+        ...base.progression,
+        ...(parsed.progression || {})
+      },
+      stats: {
+        ...base.stats,
+        ...(parsed.stats || {})
+      }
+    };
+  } catch {
+    return defaultState();
+  }
+}
+
+export function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ==============================
+// THÈME / PLEIN ÉCRAN
+// ==============================
+export function applyTheme(theme) {
+  const safeTheme = theme === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = safeTheme;
+}
+
+export function requestFullscreenToggle() {
+  const el = document.documentElement;
+
+  if (!document.fullscreenElement) {
+    el.requestFullscreen?.().catch(() => {});
+  } else {
+    document.exitFullscreen?.().catch(() => {});
+  }
+}
+
+// ==============================
+// FEEDBACK UI
+// ==============================
+export function setFeedback(el, cls, text) {
+  if (!el) return;
+  el.classList.remove("good", "bad");
+  if (cls) el.classList.add(cls);
+  el.textContent = text || "";
+}
+
+// ==============================
+// RANDOM / QCM
+// ==============================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export function pickRandomEntry(obj) {
+  const keys = Object.keys(obj);
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  return [key, obj[key]];
+}
+
+export function buildQcmChoices(allChoices, correctChoice, count = 5) {
+  const pool = allChoices.filter(choice => choice !== correctChoice);
+  shuffle(pool);
+
+  const picked = pool.slice(0, Math.max(0, count - 1));
+  const out = [...picked, correctChoice];
+
+  return shuffle(out);
+}
+
+// ==============================
+// MODES KANA
+// ==============================
+const KANA_MODES = [
+  "hira_to_romaji",
+  "romaji_to_hira",
+  "kata_to_romaji",
+  "romaji_to_kata"
+];
+
+export function chooseModePro(session) {
+  const last = session.lastMode || null;
+
+  let pool = KANA_MODES.filter(mode => mode !== last);
+
+  if (last) {
+    const lastWasInput = last.endsWith("_to_romaji");
+    const preferredWantInput = !lastWasInput;
+
+    const preferred = pool.filter(mode => mode.endsWith("_to_romaji") === preferredWantInput);
+    if (preferred.length > 0) {
+      pool = preferred;
+    }
+  }
+
+  const chosen = pool[Math.floor(Math.random() * pool.length)];
+  session.lastMode = chosen;
+  return chosen;
+}
+
+// ==============================
+// RANGS
+// ==============================
 export const RANK_ORDER = ["E", "D", "C", "B", "A", "S", "覚"];
+
+export const RANKS = RANK_ORDER;
 
 export const RANK_XP_CAP = {
   E: 300,
@@ -40,12 +177,38 @@ export const RANK_XP_CAP = {
   覚: 0
 };
 
+export function isRankUnlocked(unlockedRank, targetRank) {
+  const u = RANK_ORDER.indexOf(unlockedRank || "E");
+  const t = RANK_ORDER.indexOf(targetRank);
+  if (t === -1) return false;
+  return t <= (u === -1 ? 0 : u);
+}
+
 export function getNextRank(rank) {
   const i = RANK_ORDER.indexOf(rank);
   if (i < 0 || i >= RANK_ORDER.length - 1) return null;
   return RANK_ORDER[i + 1];
 }
 
+// Ancienne logique de déblocage simple (utile pour compat)
+export function unlockNextRank(appState, currentRank) {
+  const next = getNextRank(currentRank);
+  if (!next) return appState;
+
+  const state = appState || defaultState();
+  state.progression = state.progression || defaultState().progression;
+
+  const currentlyUnlocked = state.progression.unlockedRank || "E";
+  if (RANK_ORDER.indexOf(next) > RANK_ORDER.indexOf(currentlyUnlocked)) {
+    state.progression.unlockedRank = next;
+  }
+
+  return state;
+}
+
+// ==============================
+// NIVEAUX / XP
+// ==============================
 export function getLevelFromXP(rank, xp) {
   const cap = RANK_XP_CAP[rank];
   if (!cap || cap <= 0) return 5;
@@ -70,7 +233,7 @@ export function getSessionXpGain(session) {
   if (session.mode === "exam") return 0;
 
   const basePerCorrect = session.pack === "kanji" ? 5 : 2;
-  const baseXp = session.good * basePerCorrect;
+  const baseXp = (session.good || 0) * basePerCorrect;
   const streakBonus = getStreakBonus(session.bestStreakThisSession || 0);
 
   return baseXp + streakBonus;
@@ -78,9 +241,13 @@ export function getSessionXpGain(session) {
 
 export function applyXpToProgression(progression, xpGain) {
   const cap = RANK_XP_CAP[progression.currentRank];
-  if (!cap || cap <= 0) return progression;
 
-  progression.rankXp = Math.min(progression.rankXp + xpGain, cap);
+  if (!cap || cap <= 0) {
+    progression.level = 5;
+    return progression;
+  }
+
+  progression.rankXp = Math.min((progression.rankXp || 0) + xpGain, cap);
   progression.level = getLevelFromXP(progression.currentRank, progression.rankXp);
 
   return progression;
@@ -104,143 +271,3 @@ export function rankUp(progression) {
 
   return progression;
 }
-
-export function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-
-    // petite fusion safe
-    const base = defaultState();
-    return {
-      ...base,
-      ...parsed,
-      ui: { ...base.ui, ...(parsed.ui || {}) },
-      last: { ...base.last, ...(parsed.last || {}) },
-      progression: { ...base.progression, ...(parsed.progression || {}) },
-      stats: { ...base.stats, ...(parsed.stats || {}) },
-    };
-  } catch {
-    return defaultState();
-  }
-}
-
-export function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-// -----------------------------
-// THEME + FULLSCREEN
-// -----------------------------
-export function applyTheme(theme) {
-  const t = theme === "light" ? "light" : "dark";
-  document.documentElement.dataset.theme = t;
-}
-
-export function requestFullscreenToggle() {
-  const el = document.documentElement;
-  if (!document.fullscreenElement) {
-    el.requestFullscreen?.().catch(() => {});
-  } else {
-    document.exitFullscreen?.().catch(() => {});
-  }
-}
-
-// -----------------------------
-// UI helpers
-// -----------------------------
-export function setFeedback(el, cls, text) {
-  if (!el) return;
-  el.classList.remove("good", "bad");
-  if (cls) el.classList.add(cls);
-  el.textContent = text || "";
-}
-
-// -----------------------------
-// Kana mode picker (PRO anti-répétition)
-// -----------------------------
-const MODES = ["hira_to_romaji", "romaji_to_hira", "kata_to_romaji", "romaji_to_kata"];
-
-export function chooseModePro(session) {
-  // session.lastMode : dernier mode joué
-  // règle: jamais 2 fois le même d'affilée + alternance plus "naturelle"
-  const last = session.lastMode;
-
-  let pool = MODES.filter((m) => m !== last);
-  // petite préférence : alterner input / qcm
-  // input: *_to_romaji ; qcm: romaji_to_*
-  if (last) {
-    const lastIsInput = last.endsWith("_to_romaji");
-    const wantInput = !lastIsInput;
-    const preferred = pool.filter((m) => m.endsWith("_to_romaji") === wantInput);
-    if (preferred.length) pool = preferred;
-  }
-
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  session.lastMode = pick;
-  return pick;
-}
-
-// -----------------------------
-// Random helpers
-// -----------------------------
-export function pickRandomEntry(obj) {
-  const keys = Object.keys(obj);
-  const k = keys[Math.floor(Math.random() * keys.length)];
-  return [k, obj[k]];
-}
-
-export function buildQcmChoices(allChars, correctChar, count = 5) {
-  const pool = allChars.filter((c) => c !== correctChar);
-  const picks = [];
-
-  while (picks.length < count - 1 && pool.length > 0) {
-    const idx = Math.floor(Math.random() * pool.length);
-    picks.push(pool[idx]);
-    pool.splice(idx, 1);
-  }
-
-  picks.push(correctChar);
-  shuffle(picks);
-  return picks;
-}
-
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-// -----------------------------
-// RANKS (Yo-kai-ish letters)
-// -----------------------------
-export const RANKS = ["E", "D", "C", "B", "A", "S", "覚"];
-
-export function isRankUnlocked(unlockedRank, rank) {
-  const u = RANKS.indexOf(unlockedRank || "E");
-  const r = RANKS.indexOf(rank);
-  if (r === -1) return false;
-  return r <= (u === -1 ? 0 : u);
-}
-
-export function unlockNextRank(appState, currentRank) {
-  const cur = RANKS.indexOf(currentRank);
-  if (cur === -1) return appState;
-
-  const next = Math.min(cur + 1, RANKS.length - 1);
-  const nextRank = RANKS[next];
-
-  const s = appState || defaultState();
-  s.progression = s.progression || { unlockedRank: "E", xp: 0, bestStreak: 0 };
-
-  const unlocked = s.progression.unlockedRank || "E";
-  if (RANKS.indexOf(nextRank) > RANKS.indexOf(unlocked)) {
-    s.progression.unlockedRank = nextRank;
-  }
-  return s;
-}
-
-
