@@ -19,7 +19,7 @@ export function defaultState() {
     progression: {
       currentRank: "E",
       unlockedRank: "E",
-      rankXp: 0,
+      levelXp: 0,
       level: 1,
       bestStreak: 0
     },
@@ -253,11 +253,17 @@ export function applyXpToProgression(progression, xpGain) {
   return progression;
 }
 
-export function canTakeCurrentRankExam(progression) {
-  const cap = RANK_XP_CAP[progression.currentRank];
-  if (!cap || cap <= 0) return false;
+export function canTakeCurrentRankExam(progression, kanjiList) {
+  if (!progression) return false;
+  const currentRank = progression.currentRank || "E";
+  const currentLevel = Number(progression.level) || 1;
+  const currentXP = Number(progression.levelXP) || 0;
 
-  return progression.rankXp >= cap && progression.level === 5;
+  if (currentLevel < 5) return false;
+
+  const capLevel5 ) getLevelXPCap(currentRank, 5, kanjiList)
+
+  return currentXP >= capLevel5;
 }
 
 export function rankUp(progression) {
@@ -296,4 +302,44 @@ export function countKanjiUpToRank(rank, kanjiList) {
   }
 
   return kanjiList.filter(k => Number(k.g) <= maxGrade).length;
+}
+
+export function getRankMultiplier(rank, kanjiList) {
+  const totalKanji = countKanjiUpToRank(rank, kanjiList);
+  const raw = totalKanji * 0.02;
+  return Math.max(1, Math.round(raw));
+}
+
+export function getLevelXpCap(rank, level, kanjiList) {
+  const safeLevel = Math.min(5, Math.max(1, Number(level) || 1));
+  const multiplier = getRankMultiplier(rank, kanjiList);
+
+  return safeLevel * 100 * multiplier;
+}
+
+export function getXpForKanjiGrade(grade) {
+  const xpTable = {
+    1: 5,
+    2: 6,
+    3: 7,
+    4: 8,
+    5: 9,
+    6: 10,
+    7: 12
+  };
+
+  return xpTable[Number(grade)] ?? 5;
+}
+export function getXpForKanjiGrade(grade) {
+  const xpTable = {
+    1: 5,
+    2: 6,
+    3: 7,
+    4: 8,
+    5: 9,
+    6: 10,
+    7: 12
+  };
+
+  return xpTable[Number(grade)] ?? 5;
 }
