@@ -5,6 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>JP Quiz</title>
   <link rel="stylesheet" href="./assets/style.css" />
+  <style>
+    .level-progress {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .level-progress-bar {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    .level-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2));
+      transition: width .25s ease;
+    }
+
+    .level-progress-text {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
@@ -47,7 +79,14 @@
 
             <div class="kpi">
               <span id="levelLabel">Niveau</span>
-              <strong id="level">—</strong>
+              <strong id="levelValue">—</strong>
+            </div>
+
+            <div class="level-progress">
+              <div id="levelProgressText" class="level-progress-text">—</div>
+              <div class="level-progress-bar">
+                <div id="levelProgressFill" class="level-progress-fill"></div>
+              </div>
             </div>
 
             <div class="kpi">
@@ -74,7 +113,7 @@
       </div>
 
       <p class="hint" style="margin-top:14px;">
-        Le mode Examen ne donne pas d’XP. Il sert uniquement à valider le rang suivant quand ta jauge est pleine.
+        L’examen ne donne pas d’XP. Il sert uniquement à valider le rang suivant quand le niveau 5 est plein.
       </p>
 
     </section>
@@ -85,8 +124,20 @@
       loadState,
       saveState,
       applyTheme,
-      requestFullscreenToggle
+      requestFullscreenToggle,
+      getLevelXpCap
     } from "./assets/app.js";
+
+    import { KANJI } from "./assets/kanji.js";
+
+    const KANJI_DATA = KANJI
+      .map(item => ({
+        ...item,
+        m: Array.isArray(item.m) ? item.m.map(x => String(x).trim()).filter(Boolean) : [],
+        on: Array.isArray(item.on) ? item.on.map(x => String(x).trim()).filter(Boolean) : [],
+        kun: Array.isArray(item.kun) ? item.kun.map(x => String(x).trim()).filter(Boolean) : []
+      }))
+      .filter(item => item.k && item.m.length > 0);
 
     const app = loadState();
 
@@ -95,43 +146,48 @@
     const progression = app.progression || {
       currentRank: "E",
       unlockedRank: "E",
-      rankXp: 0,
+      levelXp: 0,
       level: 1,
       bestStreak: 0
     };
 
-    const RANK_XP_CAP = {
-      E: 300,
-      D: 500,
-      C: 800,
-      B: 1200,
-      A: 1800,
-      S: 2600,
-      覚: 0
-    };
-
     const rankEl = document.getElementById("rank");
-    const levelEl = document.getElementById("level");
     const levelLabelEl = document.getElementById("levelLabel");
+    const levelValueEl = document.getElementById("levelValue");
+    const levelProgressTextEl = document.getElementById("levelProgressText");
+    const levelProgressFillEl = document.getElementById("levelProgressFill");
     const bestStreakEl = document.getElementById("bestStreak");
     const lastNormalEl = document.getElementById("lastNormal");
     const lastInfiniteEl = document.getElementById("lastInfinite");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
     const themeToggle = document.getElementById("themeToggle");
 
-    const cap = RANK_XP_CAP[progression.currentRank] ?? 0;
-    const currentXp = progression.rankXp ?? 0;
+    const currentRank = progression.currentRank ?? "E";
+    const currentLevel = progression.level ?? 1;
+    const currentXp = progression.levelXp ?? 0;
+    const levelCap = getLevelXpCap(currentRank, currentLevel, KANJI_DATA);
 
     if (rankEl) {
-      rankEl.textContent = progression.currentRank ?? "E";
+      rankEl.textContent = currentRank;
     }
 
     if (levelLabelEl) {
-      levelLabelEl.textContent = `Niveau ${progression.level ?? 1}`;
+      levelLabelEl.textContent = `Niveau ${currentLevel}`;
     }
 
-    if (levelEl) {
-      levelEl.textContent = cap > 0 ? `${currentXp} / ${cap}` : "MAX";
+    if (levelValueEl) {
+      levelValueEl.textContent = `${currentXp} / ${levelCap}`;
+    }
+
+    if (levelProgressTextEl) {
+      levelProgressTextEl.textContent = `Progression du niveau actuel`;
+    }
+
+    if (levelProgressFillEl) {
+      const percent = levelCap > 0
+        ? Math.min(100, Math.round((currentXp / levelCap) * 100))
+        : 100;
+      levelProgressFillEl.style.width = `${percent}%`;
     }
 
     if (bestStreakEl) {
