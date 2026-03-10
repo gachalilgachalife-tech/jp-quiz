@@ -1,5 +1,21 @@
 /* assets/style.css */
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+} 
+
+romajiInput?.addEventListener("keydown", (e) => {
+  capsIndicator.classList.toggle("on", e.getModifierState && e.getModifierState("CapsLock"));
+});
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+  
 :root{
   --bg: #0b1220;
   --bg2: #0b0f17;
@@ -337,3 +353,4 @@ button {
 html, body {
   overflow-x: hidden;
 }
+
