@@ -210,18 +210,24 @@
     import { HIRAGANA, KATAKANA } from "./assets/data.js";
     import { KANJI } from "./assets/kanji.js";
     import {
-      loadState,
-      saveState,
-      applyTheme,
-      requestFullscreenToggle,
-      chooseModePro,
-      pickRandomEntry,
-      buildQcmChoices,
-      setFeedback,
-      unlockNextRank,
-      RANKS,
-      isRankUnlocked
-    } from "./assets/app.js";
+  loadState,
+  saveState,
+  applyTheme,
+  requestFullscreenToggle,
+  chooseModePro,
+  pickRandomEntry,
+  buildQcmChoices,
+  setFeedback,
+  unlockNextRank,
+  RANKS,
+  isRankUnlocked,
+  getSessionXpGain,
+  applyXpToProgression,
+  canTakeCurrentRankExam,
+  rankUp,
+  getNextRank,
+  RANK_XP_CAP
+} from "./assets/app.js";
 
     const KANJI_DATA = KANJI
       .map(item => ({
@@ -317,6 +323,18 @@
       const current = gradeValue === 7
         ? KANJI_DATA
         : KANJI_DATA.filter(k => k.g === gradeValue);
+      function isOlderRankThanCurrent(selectedRank, currentRank) {
+  return RANKS.indexOf(selectedRank) < RANKS.indexOf(currentRank);
+}
+
+function isCurrentRank(selectedRank, currentRank) {
+  return selectedRank === currentRank;
+}
+
+function getRankProgressText(progression) {
+  const cap = RANK_XP_CAP[progression.currentRank] || 0;
+  return `${progression.rankXp} / ${cap} XP • Niveau ${progression.level}`;
+}
 
       const previous = KANJI_DATA.filter(k => k.g < gradeValue);
       const prevSample = [...previous].sort(() => Math.random() - 0.5).slice(0, 10);
@@ -406,30 +424,96 @@
     }
 
     function buildKanjiSelector() {
-      const unlocked = app.progression?.unlockedRank ?? "E";
-      let chosenRank = null;
-      let chosenMode = null;
+  const progression = app.progression;
+  const unlocked = progression?.unlockedRank ?? "E";
+  const currentRank = progression?.currentRank ?? "E";
 
-      rankList.innerHTML = "";
+  let chosenRank = null;
+  let chosenMode = null;
 
-      for (const r of RANKS) {
-        const ok = isRankUnlocked(unlocked, r);
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "btn secondary";
-        b.textContent = ok ? r : `${r} 🔒`;
-        b.disabled = !ok;
-        b.style.opacity = ok ? "1" : "0.45";
+  rankList.innerHTML = "";
 
-        b.addEventListener("click", () => {
-          [...rankList.querySelectorAll("button")].forEach(x => x.classList.remove("primary"));
-          b.classList.add("primary");
-          chosenRank = r;
-          btnStartKanji.disabled = !(chosenRank && chosenMode);
-        });
+  for (const r of RANKS) {
+    const ok = isRankUnlocked(unlocked, r);
 
-        rankList.appendChild(b);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn secondary";
+    b.textContent = ok ? r : `${r} 🔒`;
+    b.disabled = !ok;
+    b.style.opacity = ok ? "1" : "0.45";
+
+    b.addEventListener("click", () => {
+      [...rankList.querySelectorAll("button")].forEach(x => x.classList.remove("primary"));
+      b.classList.add("primary");
+      chosenRank = r;
+      refreshExamAvailability();
+    });
+
+    rankList.appendChild(b);
+  }
+
+  function refreshExamAvailability() {
+    const modeButtons = [...document.querySelectorAll("[data-kmode]")];
+
+    modeButtons.forEach(btn => {
+      const mode = btn.dataset.kmode;
+
+      if (mode !== "exam") {
+        btn.disabled = !chosenRank;
+        return;
       }
+
+      if (!chosenRank) {
+        btn.disabled = true;
+        return;
+      }
+
+      const olderExam = isOlderRankThanCurrent(chosenRank, currentRank);
+      const currentExam = isCurrentRank(chosenRank, currentRank);
+
+      if (olderExam) {
+        btn.disabled = false; // ancien examen rejouable
+        return;
+      }
+
+      if (currentExam) {
+        btn.disabled = !canTakeCurrentRankExam(progression);
+        return;
+      }
+
+      // examen d’un rang futur : non
+      btn.disabled = true;
+    });
+
+    if (chosenMode === "exam") {
+      const examBtn = document.querySelector('[data-kmode="exam"]');
+      if (examBtn?.disabled) {
+        chosenMode = null;
+      }
+    }
+
+    btnStartKanji.disabled = !(chosenRank && chosenMode);
+  }
+
+  document.querySelectorAll("[data-kmode]").forEach(btn => {
+    btn.onclick = () => {
+      if (btn.disabled) return;
+
+      document.querySelectorAll("[data-kmode]").forEach(x => x.classList.remove("primary"));
+      btn.classList.add("primary");
+      chosenMode = btn.dataset.kmode;
+      btnStartKanji.disabled = !(chosenRank && chosenMode);
+    };
+  });
+
+  btnStartKanji.onclick = () => {
+    const go = `./quiz.html?pack=kanji&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
+    location.href = go;
+  };
+
+  refreshExamAvailability();
+}
 
       document.querySelectorAll("[data-kmode]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -447,12 +531,103 @@
     }
 
     function endSession() {
-      promptEl.textContent = "Fin";
-      qcmRow.innerHTML = "";
-      inputRow.style.display = "none";
-      btnNext.style.display = "none";
-      hideCorrection();
+  app = loadState();
+  app.progression = app.progression || {
+    currentRank: "E",
+    unlockedRank: "E",
+    rankXp: 0,
+    level: 1,
+    bestStreak: 0
+  };
+
+  // meilleure streak globale
+  if ((session.bestStreakThisSession || 0) > (app.progression.bestStreak || 0)) {
+    app.progression.bestStreak = session.bestStreakThisSession || 0;
+  }
+
+  // derniers scores
+  app.last = app.last || {
+    normalScore: null,
+    infiniteQuestionsFor100: null
+  };
+
+  if (session.mode === "normal") {
+    app.last.normalScore = session.good;
+  }
+
+  if (session.mode === "infini") {
+    app.last.infiniteQuestionsFor100 = session.asked;
+  }
+
+  // XP seulement en normal / infini
+  let gainedXp = 0;
+  if (session.mode !== "exam") {
+    gainedXp = getSessionXpGain(session);
+    applyXpToProgression(app.progression, gainedXp);
+  }
+
+  // Examen : rank up seulement si réussi ET si examen du rang actuel autorisé
+  let examPassed = false;
+  let rankUpText = "";
+
+  if (session.mode === "exam" && session.pack === "kanji") {
+    const success = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
+    const isCurrent = session.rank === app.progression.currentRank;
+    const allowed = canTakeCurrentRankExam(app.progression);
+
+    // anciens examens : rejouables, mais ne changent rien
+    if (success && isCurrent && allowed) {
+      const oldRank = app.progression.currentRank;
+      rankUp(app.progression);
+      examPassed = true;
+      rankUpText = `Nouveau rang : ${app.progression.currentRank}`;
     }
+  }
+
+  saveState(app);
+
+  // UI de fin
+  lock(true);
+  inputRow.style.display = "none";
+  qcmRow.style.display = "none";
+  hideCorrection();
+  btnNext.style.display = "none";
+  btnNext.disabled = true;
+
+  const cap = RANK_XP_CAP[app.progression.currentRank] || 0;
+  const progressText = cap > 0
+    ? `${app.progression.rankXp} / ${cap} XP • Niveau ${app.progression.level}`
+    : `Niveau ${app.progression.level}`;
+
+  let endText = "";
+
+  if (session.mode === "exam") {
+    const success = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
+    endText = success ? "Examen réussi" : "Examen raté";
+
+    if (rankUpText) {
+      endText += ` • ${rankUpText}`;
+    }
+  } else {
+    endText = `Session terminée • +${gainedXp} XP`;
+  }
+
+  promptEl.textContent = "Fin";
+  hintEl.textContent = `Rang ${app.progression.currentRank} • ${progressText}`;
+  setFeedback(feedbackEl, "", endText);
+
+  hudScore.textContent = `Bonnes réponses : ${session.good}`;
+  hudMini.textContent = `Meilleure streak : ${session.bestStreakThisSession || 0}`;
+  hudXP.textContent = session.mode === "exam" ? `XP +0` : `XP +${gainedXp}`;
+  hudStreak.textContent = `Niveau ${app.progression.level}`;
+
+  footer.innerHTML = `
+    <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <a class="btn primary" href="./index.html">Retour menu</a>
+      <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
+    </div>
+  `;
+}
 
     function nextQuestion() {
       btnNext.style.display = "none";
@@ -610,6 +785,10 @@
       if (ok) {
         session.good++;
         session.streak++;
+        sessions.bestStreakThisSession = Math.max(
+          session.bestStreakThisSession || 0,
+          session.streak
+          );
         setFeedback(feedbackEl, "good", "Correct");
       } else {
         session.streak = 0;
@@ -697,3 +876,4 @@
   </script>
 </body>
 </html>
+
