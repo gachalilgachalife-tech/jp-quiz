@@ -130,94 +130,106 @@
 
     import { KANJI } from "./assets/kanji.js";
 
-    const KANJI_DATA = KANJI
-      .map(item => ({
-        ...item,
-        m: Array.isArray(item.m) ? item.m.map(x => String(x).trim()).filter(Boolean) : [],
-        on: Array.isArray(item.on) ? item.on.map(x => String(x).trim()).filter(Boolean) : [],
-        kun: Array.isArray(item.kun) ? item.kun.map(x => String(x).trim()).filter(Boolean) : []
-      }))
-      .filter(item => item.k && item.m.length > 0);
+    try {
+      const KANJI_DATA = Array.isArray(KANJI)
+        ? KANJI
+            .map(item => ({
+              ...item,
+              m: Array.isArray(item.m) ? item.m.map(x => String(x).trim()).filter(Boolean) : [],
+              on: Array.isArray(item.on) ? item.on.map(x => String(x).trim()).filter(Boolean) : [],
+              kun: Array.isArray(item.kun) ? item.kun.map(x => String(x).trim()).filter(Boolean) : []
+            }))
+            .filter(item => item.k && item.m.length > 0)
+        : [];
 
-    const app = loadState();
+      const app = loadState();
 
-    applyTheme(app.ui?.theme ?? "dark");
+      applyTheme(app.ui?.theme ?? "dark");
 
-    const progression = app.progression || {
-      currentRank: "E",
-      unlockedRank: "E",
-      levelXp: 0,
-      level: 1,
-      bestStreak: 0
-    };
+      const progression = app.progression || {
+        currentRank: "E",
+        unlockedRank: "E",
+        levelXp: 0,
+        level: 1,
+        bestStreak: 0
+      };
 
-    const rankEl = document.getElementById("rank");
-    const levelLabelEl = document.getElementById("levelLabel");
-    const levelValueEl = document.getElementById("levelValue");
-    const levelProgressTextEl = document.getElementById("levelProgressText");
-    const levelProgressFillEl = document.getElementById("levelProgressFill");
-    const bestStreakEl = document.getElementById("bestStreak");
-    const lastNormalEl = document.getElementById("lastNormal");
-    const lastInfiniteEl = document.getElementById("lastInfinite");
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
-    const themeToggle = document.getElementById("themeToggle");
+      const rankEl = document.getElementById("rank");
+      const levelLabelEl = document.getElementById("levelLabel");
+      const levelValueEl = document.getElementById("levelValue");
+      const levelProgressTextEl = document.getElementById("levelProgressText");
+      const levelProgressFillEl = document.getElementById("levelProgressFill");
+      const bestStreakEl = document.getElementById("bestStreak");
+      const lastNormalEl = document.getElementById("lastNormal");
+      const lastInfiniteEl = document.getElementById("lastInfinite");
+      const fullscreenBtn = document.getElementById("fullscreenBtn");
+      const themeToggle = document.getElementById("themeToggle");
 
-    const currentRank = progression.currentRank ?? "E";
-    const currentLevel = progression.level ?? 1;
-    const currentXp = progression.levelXp ?? 0;
-    const levelCap = getLevelXpCap(currentRank, currentLevel, KANJI_DATA);
+      const currentRank = progression.currentRank ?? "E";
+      const currentLevel = progression.level ?? 1;
+      const currentXp = progression.levelXp ?? 0;
 
-    if (rankEl) {
-      rankEl.textContent = currentRank;
+      let levelCap = 100;
+      try {
+        levelCap = getLevelXpCap(currentRank, currentLevel, KANJI_DATA);
+      } catch {
+        levelCap = 100;
+      }
+
+      if (rankEl) {
+        rankEl.textContent = currentRank;
+      }
+
+      if (levelLabelEl) {
+        levelLabelEl.textContent = `Niveau ${currentLevel}`;
+      }
+
+      if (levelValueEl) {
+        levelValueEl.textContent = `${currentXp} / ${levelCap}`;
+      }
+
+      if (levelProgressTextEl) {
+        levelProgressTextEl.textContent = `Progression du niveau actuel`;
+      }
+
+      if (levelProgressFillEl) {
+        const percent = levelCap > 0
+          ? Math.min(100, Math.round((currentXp / levelCap) * 100))
+          : 100;
+        levelProgressFillEl.style.width = `${percent}%`;
+      }
+
+      if (bestStreakEl) {
+        bestStreakEl.textContent = progression.bestStreak ?? 0;
+      }
+
+      const last = app.last || {
+        normalScore: null,
+        infiniteQuestionsFor100: null
+      };
+
+      if (lastNormalEl) {
+        lastNormalEl.textContent =
+          last.normalScore != null ? last.normalScore : "—";
+      }
+
+      if (lastInfiniteEl) {
+        lastInfiniteEl.textContent =
+          last.infiniteQuestionsFor100 != null ? last.infiniteQuestionsFor100 : "—";
+      }
+
+      fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
+
+      themeToggle?.addEventListener("click", () => {
+        const s = loadState();
+        s.ui = s.ui || { theme: "dark" };
+        s.ui.theme = s.ui.theme === "dark" ? "light" : "dark";
+        saveState(s);
+        applyTheme(s.ui.theme);
+      });
+    } catch (err) {
+      console.error("Erreur index.html :", err);
     }
-
-    if (levelLabelEl) {
-      levelLabelEl.textContent = `Niveau ${currentLevel}`;
-    }
-
-    if (levelValueEl) {
-      levelValueEl.textContent = `${currentXp} / ${levelCap}`;
-    }
-
-    if (levelProgressTextEl) {
-      levelProgressTextEl.textContent = `Progression du niveau actuel`;
-    }
-
-    if (levelProgressFillEl) {
-      const percent = levelCap > 0
-        ? Math.min(100, Math.round((currentXp / levelCap) * 100))
-        : 100;
-      levelProgressFillEl.style.width = `${percent}%`;
-    }
-
-    if (bestStreakEl) {
-      bestStreakEl.textContent = progression.bestStreak ?? 0;
-    }
-
-    const last = app.last || {
-      normalScore: null,
-      infiniteQuestionsFor100: null
-    };
-
-    if (lastNormalEl) {
-      lastNormalEl.textContent =
-        last.normalScore != null ? last.normalScore : "—";
-    }
-
-    if (lastInfiniteEl) {
-      lastInfiniteEl.textContent =
-        last.infiniteQuestionsFor100 != null ? last.infiniteQuestionsFor100 : "—";
-    }
-
-    fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
-
-    themeToggle?.addEventListener("click", () => {
-      const s = loadState();
-      s.ui = s.ui || { theme: "dark" };
-      s.ui.theme = s.ui.theme === "dark" ? "light" : "dark";
-      saveState(s);
-      applyTheme(s.ui.theme);
-    });
   </script>
 </body>
 </html>
