@@ -164,18 +164,7 @@ export function chooseModePro(session) {
 // RANGS
 // ==============================
 export const RANK_ORDER = ["E", "D", "C", "B", "A", "S", "覚"];
-
 export const RANKS = RANK_ORDER;
-
-export const RANK_XP_CAP = {
-  E: 300,
-  D: 500,
-  C: 800,
-  B: 1200,
-  A: 1800,
-  S: 2600,
-  覚: 0
-};
 
 export function isRankUnlocked(unlockedRank, targetRank) {
   const u = RANK_ORDER.indexOf(unlockedRank || "E");
@@ -190,94 +179,9 @@ export function getNextRank(rank) {
   return RANK_ORDER[i + 1];
 }
 
-// Ancienne logique de déblocage simple (utile pour compat)
-export function unlockNextRank(appState, currentRank) {
-  const next = getNextRank(currentRank);
-  if (!next) return appState;
-
-  const state = appState || defaultState();
-  state.progression = state.progression || defaultState().progression;
-
-  const currentlyUnlocked = state.progression.unlockedRank || "E";
-  if (RANK_ORDER.indexOf(next) > RANK_ORDER.indexOf(currentlyUnlocked)) {
-    state.progression.unlockedRank = next;
-  }
-
-  return state;
-}
-
 // ==============================
-// NIVEAUX / XP
+// COMPTEUR DE KANJI PAR RANG
 // ==============================
-export function getLevelFromXP(rank, xp) {
-  const cap = RANK_XP_CAP[rank];
-  if (!cap || cap <= 0) return 5;
-
-  const ratio = xp / cap;
-
-  if (ratio >= 0.8) return 5;
-  if (ratio >= 0.6) return 4;
-  if (ratio >= 0.4) return 3;
-  if (ratio >= 0.2) return 2;
-  return 1;
-}
-
-export function getStreakBonus(streak) {
-  if (streak >= 10) return 30;
-  if (streak >= 5) return 15;
-  if (streak >= 3) return 5;
-  return 0;
-}
-
-export function getSessionXpGain(session) {
-  if (session.mode === "exam") return 0;
-
-  const basePerCorrect = session.pack === "kanji" ? 5 : 2;
-  const baseXp = (session.good || 0) * basePerCorrect;
-  const streakBonus = getStreakBonus(session.bestStreakThisSession || 0);
-
-  return baseXp + streakBonus;
-}
-
-export function applyXpToProgression(progression, xpGain) {
-  const cap = RANK_XP_CAP[progression.currentRank];
-
-  if (!cap || cap <= 0) {
-    progression.level = 5;
-    return progression;
-  }
-
-  progression.rankXp = Math.min((progression.rankXp || 0) + xpGain, cap);
-  progression.level = getLevelFromXP(progression.currentRank, progression.rankXp);
-
-  return progression;
-}
-
-export function canTakeCurrentRankExam(progression, kanjiList) {
-  if (!progression) return false;
-  const currentRank = progression.currentRank || "E";
-  const currentLevel = Number(progression.level) || 1;
-  const currentXP = Number(progression.levelXP) || 0;
-
-  if (currentLevel < 5) return false;
-
-  const capLevel5 ) getLevelXPCap(currentRank, 5, kanjiList)
-
-  return currentXP >= capLevel5;
-}
-
-export function rankUp(progression) {
-  const next = getNextRank(progression.currentRank);
-  if (!next) return progression;
-
-  progression.currentRank = next;
-  progression.unlockedRank = next;
-  progression.rankXp = 0;
-  progression.level = 1;
-
-  return progression;
-}
-
 export function getGradeValueFromRank(rank) {
   const map = {
     E: 1,
@@ -304,6 +208,9 @@ export function countKanjiUpToRank(rank, kanjiList) {
   return kanjiList.filter(k => Number(k.g) <= maxGrade).length;
 }
 
+// ==============================
+// XP PAR NIVEAU
+// ==============================
 export function getRankMultiplier(rank, kanjiList) {
   const totalKanji = countKanjiUpToRank(rank, kanjiList);
   const raw = totalKanji * 0.02;
@@ -317,6 +224,9 @@ export function getLevelXpCap(rank, level, kanjiList) {
   return safeLevel * 100 * multiplier;
 }
 
+// ==============================
+// XP GAGNÉE PAR DIFFICULTÉ
+// ==============================
 export function getXpForKanjiGrade(grade) {
   const xpTable = {
     1: 5,
@@ -330,16 +240,94 @@ export function getXpForKanjiGrade(grade) {
 
   return xpTable[Number(grade)] ?? 5;
 }
-export function getXpForKanjiGrade(grade) {
-  const xpTable = {
-    1: 5,
-    2: 6,
-    3: 7,
-    4: 8,
-    5: 9,
-    6: 10,
-    7: 12
-  };
 
-  return xpTable[Number(grade)] ?? 5;
+// ==============================
+// BONUS DE STREAK
+// ==============================
+export function getStreakBonus(streak) {
+  if (streak >= 10) return 30;
+  if (streak >= 5) return 15;
+  if (streak >= 3) return 5;
+  return 0;
+}
+
+// Cette fonction sert ici uniquement au bonus de fin de session.
+// La base XP des kanji est calculée séparément dans quiz.html selon le grade.
+export function getSessionXpGain(session) {
+  if (session.mode === "exam") return 0;
+  return getStreakBonus(session.bestStreakThisSession || 0);
+}
+
+// ==============================
+// APPLICATION DE L'XP AU NIVEAU
+// ==============================
+export function applyXpToLevel(progression, xpGain, kanjiList) {
+  if (!progression) return progression;
+
+  const currentRank = progression.currentRank || "E";
+  let currentLevel = Number(progression.level) || 1;
+  let currentXp = Number(progression.levelXp) || 0;
+
+  if (currentLevel >= 5) {
+    const cap = getLevelXpCap(currentRank, 5, kanjiList);
+    progression.level = 5;
+    progression.levelXp = Math.min(currentXp + xpGain, cap);
+    return progression;
+  }
+
+  currentXp += xpGain;
+
+  while (currentLevel < 5) {
+    const cap = getLevelXpCap(currentRank, currentLevel, kanjiList);
+
+    if (currentXp < cap) {
+      break;
+    }
+
+    currentXp -= cap;
+    currentLevel += 1;
+  }
+
+  if (currentLevel >= 5) {
+    const capLevel5 = getLevelXpCap(currentRank, 5, kanjiList);
+    progression.level = 5;
+    progression.levelXp = Math.min(currentXp, capLevel5);
+  } else {
+    progression.level = currentLevel;
+    progression.levelXp = currentXp;
+  }
+
+  return progression;
+}
+
+// ==============================
+// EXAMEN DU RANG ACTUEL
+// ==============================
+export function canTakeCurrentRankExam(progression, kanjiList) {
+  if (!progression) return false;
+
+  const currentRank = progression.currentRank || "E";
+  const currentLevel = Number(progression.level) || 1;
+  const currentXp = Number(progression.levelXp) || 0;
+
+  if (currentLevel < 5) return false;
+
+  const capLevel5 = getLevelXpCap(currentRank, 5, kanjiList);
+
+  return currentXp >= capLevel5;
+}
+
+// ==============================
+// RANK UP
+// ==============================
+export function rankUp(progression) {
+  const next = getNextRank(progression.currentRank);
+  if (!next) return progression;
+
+  progression.currentRank = next;
+  progression.unlockedRank = next;
+  progression.level = 1;
+  progression.levelXp = 0;
+
+  return progression;
 }
