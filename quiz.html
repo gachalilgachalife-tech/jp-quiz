@@ -420,7 +420,8 @@
       examQueue: null,
       examIndex: 0
     };
-
+const inputForm = document.getElementById("inputRow");
+    
     function getGradeValue(rank) {
       const map = { E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, 覚: 7 };
       return map[rank] ?? 1;
@@ -991,10 +992,14 @@
       nextQuestion();
     });
 
-    romajiInput?.addEventListener("keydown", (e) => {
-      capsIndicator.classList.toggle("on", e.getModifierState && e.getModifierState("CapsLock"));
-      if (e.key === "Enter") submit(romajiInput.value.trim());
-    });
+   romajiInput?.addEventListener("keydown", (e) => {
+  capsIndicator.classList.toggle("on", e.getModifierState && e.getModifierState("CapsLock"));
+});
+
+inputForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  submit(romajiInput.value.trim());
+});
 
     function startQuiz() {
       if (session.pack === "kanji" && session.mode === "exam") {
@@ -1024,4 +1029,5 @@
   </script>
 </body>
 </html>
+
 
