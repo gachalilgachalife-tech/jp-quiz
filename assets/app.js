@@ -271,3 +271,29 @@ export function rankUp(progression) {
 
   return progression;
 }
+
+export function getGradeValueFromRank(rank) {
+  const map = {
+    E: 1,
+    D: 2,
+    C: 3,
+    B: 4,
+    A: 5,
+    S: 6,
+    覚: 7
+  };
+
+  return map[rank] ?? 1;
+}
+
+export function countKanjiUpToRank(rank, kanjiList) {
+  const maxGrade = getGradeValueFromRank(rank);
+
+  if (!Array.isArray(kanjiList)) return 0;
+
+  if (maxGrade === 7) {
+    return kanjiList.length;
+  }
+
+  return kanjiList.filter(k => Number(k.g) <= maxGrade).length;
+}
