@@ -62,15 +62,13 @@
     </section>
   </main>
 
-  <script type="module">
-    import { loadState, saveState, applyTheme, requestFullscreenToggle } from "./assets/app.js";
+ <script type="module">
 
-    const app = loadState();
+import {
+  loadState,
+  applyTheme
+} from "./assets/app.js";
 
-    // thème
-    applyTheme(app.ui?.theme ?? "dark");
-
-    // progression (nouveau modèle)
 const app = loadState();
 
 applyTheme(app.ui?.theme ?? "dark");
@@ -93,15 +91,23 @@ const RANK_XP_CAP = {
   覚: 0
 };
 
-document.getElementById("rank").textContent = progression.currentRank ?? "E";
-document.getElementById("bestStreak").textContent = progression.bestStreak ?? 0;
+document.getElementById("rank").textContent =
+  progression.currentRank ?? "E";
+
+document.getElementById("bestStreak").textContent =
+  progression.bestStreak ?? 0;
 
 const cap = RANK_XP_CAP[progression.currentRank] ?? 0;
 const currentXp = progression.rankXp ?? 0;
 
 const xpEl = document.getElementById("xp");
+
 if (xpEl) {
-  xpEl.textContent = cap > 0 ? `${currentXp} / ${cap}` : "MAX";
+  if (cap > 0) {
+    xpEl.textContent = `${currentXp} / ${cap}`;
+  } else {
+    xpEl.textContent = "MAX";
+  }
 }
 
 const last = app.last || {
@@ -114,8 +120,7 @@ document.getElementById("lastNormal").textContent =
 
 document.getElementById("lastInfinite").textContent =
   last.infiniteQuestionsFor100 != null ? last.infiniteQuestionsFor100 : "—";
-  </script>
+
+</script>
 </body>
 </html>
-
-
