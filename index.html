@@ -42,7 +42,7 @@
           <div class="panel-title">Progression</div>
           <div class="panel-body">
             <div class="kpi"><span>Rang</span><strong id="rank">—</strong></div>
-            <div class="kpi"><span>XP</span><strong id="xp">—</strong></div>
+            <div class="kpi"><span id="levelLabel">Niveau</span><strong id="level">—</strong></div>
             <div class="kpi"><span>Meilleure streak</span><strong id="bestStreak">—</strong></div>
           </div>
         </div>
@@ -79,6 +79,13 @@ const progression = app.progression || {
   rankXp: 0,
   level: 1,
   bestStreak: 0
+  const levelEl = document.getElementById("level");
+const levelLabel = document.getElementById("levelLabel");
+
+if (levelEl) {
+  levelLabel.textContent = `Niveau ${progression.level}`;
+  levelEl.textContent = cap > 0 ? `${currentXp} / ${cap}` : "MAX";
+}
 };
 
 const RANK_XP_CAP = {
@@ -124,3 +131,4 @@ document.getElementById("lastInfinite").textContent =
 </script>
 </body>
 </html>
+
