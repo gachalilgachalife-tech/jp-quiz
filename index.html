@@ -1,18 +1,18 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>JP Quiz</title>
   <link rel="stylesheet" href="./assets/style.css" />
 </head>
-
 <body>
+
   <header class="topbar">
     <div class="brand">
       <span class="dot"></span>
       <span class="brand-title">JP Quiz</span>
-      <span class="chip">Phase 1</span>
+      <span class="chip">Menu</span>
     </div>
 
     <div class="top-actions">
@@ -26,8 +26,7 @@
 
       <h1 class="title">Quiz Japonais</h1>
       <p class="sub">
-        Objectif : apprendre vite (kana + kanji) grâce à des modes courts et infinis, tout en t'amusant.
-        <br/>Choisis une catégorie :
+        Apprends les kana et les kanji avec un système de rang, de niveau, d’examen et de progression.
       </p>
 
       <div class="actions">
@@ -41,94 +40,128 @@
         <div class="panel">
           <div class="panel-title">Progression</div>
           <div class="panel-body">
-            <div class="kpi"><span>Rang</span><strong id="rank">—</strong></div>
-            <div class="kpi"><span id="levelLabel">Niveau</span><strong id="level">—</strong></div>
-            <div class="kpi"><span>Meilleure streak</span><strong id="bestStreak">—</strong></div>
+            <div class="kpi">
+              <span>Rang</span>
+              <strong id="rank">—</strong>
+            </div>
+
+            <div class="kpi">
+              <span id="levelLabel">Niveau</span>
+              <strong id="level">—</strong>
+            </div>
+
+            <div class="kpi">
+              <span>Meilleure streak</span>
+              <strong id="bestStreak">—</strong>
+            </div>
           </div>
         </div>
 
         <div class="panel">
           <div class="panel-title">Dernières performances</div>
           <div class="panel-body">
-            <div class="kpi"><span>Score Normal</span><strong id="lastNormal">—</strong></div>
-            <div class="kpi"><span>Questions pour 100</span><strong id="lastInfinite">—</strong></div>
+            <div class="kpi">
+              <span>Score Normal</span>
+              <strong id="lastNormal">—</strong>
+            </div>
+
+            <div class="kpi">
+              <span>Questions pour 100</span>
+              <strong id="lastInfinite">—</strong>
+            </div>
           </div>
         </div>
       </div>
 
       <p class="hint" style="margin-top:14px;">
-        Astuce : tu peux aussi utiliser F11. Le bouton "Plein écran" marche si le navigateur l'autorise.
+        Le mode Examen ne donne pas d’XP. Il sert uniquement à valider le rang suivant quand ta jauge est pleine.
       </p>
+
     </section>
   </main>
 
- <script type="module">
+  <script type="module">
+    import {
+      loadState,
+      saveState,
+      applyTheme,
+      requestFullscreenToggle
+    } from "./assets/app.js";
 
-import {
-  loadState,
-  applyTheme
-} from "./assets/app.js";
+    const app = loadState();
 
-const app = loadState();
+    applyTheme(app.ui?.theme ?? "dark");
 
-applyTheme(app.ui?.theme ?? "dark");
+    const progression = app.progression || {
+      currentRank: "E",
+      unlockedRank: "E",
+      rankXp: 0,
+      level: 1,
+      bestStreak: 0
+    };
 
-const progression = app.progression || {
-  currentRank: "E",
-  unlockedRank: "E",
-  rankXp: 0,
-  level: 1,
-  bestStreak: 0
-  const levelEl = document.getElementById("level");
-const levelLabel = document.getElementById("levelLabel");
+    const RANK_XP_CAP = {
+      E: 300,
+      D: 500,
+      C: 800,
+      B: 1200,
+      A: 1800,
+      S: 2600,
+      覚: 0
+    };
 
-if (levelEl) {
-  levelLabel.textContent = `Niveau ${progression.level}`;
-  levelEl.textContent = cap > 0 ? `${currentXp} / ${cap}` : "MAX";
-}
-};
+    const rankEl = document.getElementById("rank");
+    const levelEl = document.getElementById("level");
+    const levelLabelEl = document.getElementById("levelLabel");
+    const bestStreakEl = document.getElementById("bestStreak");
+    const lastNormalEl = document.getElementById("lastNormal");
+    const lastInfiniteEl = document.getElementById("lastInfinite");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const themeToggle = document.getElementById("themeToggle");
 
-const RANK_XP_CAP = {
-  E: 300,
-  D: 500,
-  C: 800,
-  B: 1200,
-  A: 1800,
-  S: 2600,
-  覚: 0
-};
+    const cap = RANK_XP_CAP[progression.currentRank] ?? 0;
+    const currentXp = progression.rankXp ?? 0;
 
-document.getElementById("rank").textContent =
-  progression.currentRank ?? "E";
+    if (rankEl) {
+      rankEl.textContent = progression.currentRank ?? "E";
+    }
 
-document.getElementById("bestStreak").textContent =
-  progression.bestStreak ?? 0;
+    if (levelLabelEl) {
+      levelLabelEl.textContent = `Niveau ${progression.level ?? 1}`;
+    }
 
-const cap = RANK_XP_CAP[progression.currentRank] ?? 0;
-const currentXp = progression.rankXp ?? 0;
+    if (levelEl) {
+      levelEl.textContent = cap > 0 ? `${currentXp} / ${cap}` : "MAX";
+    }
 
-const xpEl = document.getElementById("xp");
+    if (bestStreakEl) {
+      bestStreakEl.textContent = progression.bestStreak ?? 0;
+    }
 
-if (xpEl) {
-  if (cap > 0) {
-    xpEl.textContent = `${currentXp} / ${cap}`;
-  } else {
-    xpEl.textContent = "MAX";
-  }
-}
+    const last = app.last || {
+      normalScore: null,
+      infiniteQuestionsFor100: null
+    };
 
-const last = app.last || {
-  normalScore: null,
-  infiniteQuestionsFor100: null
-};
+    if (lastNormalEl) {
+      lastNormalEl.textContent =
+        last.normalScore != null ? last.normalScore : "—";
+    }
 
-document.getElementById("lastNormal").textContent =
-  last.normalScore != null ? last.normalScore : "—";
+    if (lastInfiniteEl) {
+      lastInfiniteEl.textContent =
+        last.infiniteQuestionsFor100 != null ? last.infiniteQuestionsFor100 : "—";
+    }
 
-document.getElementById("lastInfinite").textContent =
-  last.infiniteQuestionsFor100 != null ? last.infiniteQuestionsFor100 : "—";
+    fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
 
-</script>
+    themeToggle?.addEventListener("click", () => {
+      const s = loadState();
+      s.ui = s.ui || { theme: "dark" };
+      s.ui.theme = s.ui.theme === "dark" ? "light" : "dark";
+      saveState(s);
+      applyTheme(s.ui.theme);
+    });
+  </script>
 </body>
 </html>
-
