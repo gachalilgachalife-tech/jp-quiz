@@ -87,9 +87,14 @@ export function requestFullscreenToggle() {
   const el = document.documentElement;
 
   if (!document.fullscreenElement) {
-    el.requestFullscreen?.().catch(() => {});
-  } else {
-    document.exitFullscreen?.().catch(() => {});
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    }
+    return;
+  }
+
+  if (document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
   }
 }
 
@@ -329,4 +334,20 @@ export function rankUp(progression) {
   progression.levelXp = 0;
 
   return progression;
+}
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
 }
