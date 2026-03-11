@@ -255,18 +255,18 @@
 
       <div class="answer" id="answer">
         <form class="input-row" id="inputRow" style="display:none;" novalidate>
-  <input
-    id="romajiInput"
-    type="text"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="none"
-    spellcheck="false"
-    inputmode="latin"
-    enterkeyhint="done"
-  />
-  <span id="capsIndicator" class="caps">CAPS</span>
-</form>
+          <input
+            id="romajiInput"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
+            inputmode="latin"
+            enterkeyhint="done"
+          />
+          <span id="capsIndicator" class="caps">CAPS</span>
+        </form>
 
         <div class="qcm" id="qcmRow" style="display:none;"></div>
         <div class="hint" id="hint">—</div>
@@ -384,6 +384,7 @@
     const hintEl = document.getElementById("hint");
 
     const answer = document.getElementById("answer");
+    const inputForm = document.getElementById("inputRow");
     const inputRow = document.getElementById("inputRow");
     const romajiInput = document.getElementById("romajiInput");
     const capsIndicator = document.getElementById("capsIndicator");
@@ -404,7 +405,6 @@
     const rankUpOverlay = document.getElementById("rankUpOverlay");
     const rankUpRank = document.getElementById("rankUpRank");
     const rankUpSub = document.getElementById("rankUpSub");
-    const inputForm = document.getElementById("inputRow");
 
     let session = {
       pack,
@@ -422,8 +422,7 @@
       examQueue: null,
       examIndex: 0
     };
-const inputForm = document.getElementById("inputRow");
-    
+
     function getGradeValue(rank) {
       const map = { E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, 覚: 7 };
       return map[rank] ?? 1;
@@ -795,7 +794,7 @@ const inputForm = document.getElementById("inputRow");
         promptEl.textContent = char;
         inputRow.style.display = "flex";
         qcmRow.style.display = "none";
-        hintEl.textContent = "Entre le romaji puis appuie sur Entrée.";
+        hintEl.textContent = "Entre le romaji puis appuie sur Terminé.";
         romajiInput.focus();
         return;
       }
@@ -806,7 +805,7 @@ const inputForm = document.getElementById("inputRow");
         promptEl.textContent = char;
         inputRow.style.display = "flex";
         qcmRow.style.display = "none";
-        hintEl.textContent = "Entre le romaji puis appuie sur Entrée.";
+        hintEl.textContent = "Entre le romaji puis appuie sur Terminé.";
         romajiInput.focus();
         return;
       }
@@ -994,19 +993,14 @@ const inputForm = document.getElementById("inputRow");
       nextQuestion();
     });
 
-   romajiInput?.addEventListener("keydown", (e) => {
-  capsIndicator.classList.toggle("on", e.getModifierState && e.getModifierState("CapsLock"));
-});
+    romajiInput?.addEventListener("keydown", (e) => {
+      capsIndicator.classList.toggle("on", e.getModifierState && e.getModifierState("CapsLock"));
+    });
 
-inputForm?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  submit(romajiInput.value.trim());
-});
-
-inputForm?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  submit(romajiInput.value.trim());
-});
+    inputForm?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submit(romajiInput.value.trim());
+    });
 
     function startQuiz() {
       if (session.pack === "kanji" && session.mode === "exam") {
@@ -1036,7 +1030,3 @@ inputForm?.addEventListener("submit", (e) => {
   </script>
 </body>
 </html>
-
-
-
-
