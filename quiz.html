@@ -254,18 +254,19 @@
       <div class="prompt" id="prompt">—</div>
 
       <div class="answer" id="answer">
-        <div class="input-row" id="inputRow" style="display:none;">
-          <input 
-            id="romajiInput" 
-            type="text" 
-            autocomplete="off" 
-            autocorrect="off"
-            autocapitalize="none"
-            spellcheck="false" 
-            inputmode="latin"
-            enterkeyhint="done"/>
-          <span id="capsIndicator" class="caps">CAPS</span>
-        </div>
+        <form class="input-row" id="inputRow" style="display:none;" novalidate>
+  <input
+    id="romajiInput"
+    type="text"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="none"
+    spellcheck="false"
+    inputmode="latin"
+    enterkeyhint="done"
+  />
+  <span id="capsIndicator" class="caps">CAPS</span>
+</form>
 
         <div class="qcm" id="qcmRow" style="display:none;"></div>
         <div class="hint" id="hint">—</div>
@@ -403,6 +404,7 @@
     const rankUpOverlay = document.getElementById("rankUpOverlay");
     const rankUpRank = document.getElementById("rankUpRank");
     const rankUpSub = document.getElementById("rankUpSub");
+    const inputForm = document.getElementById("inputRow");
 
     let session = {
       pack,
@@ -1001,6 +1003,11 @@ inputForm?.addEventListener("submit", (e) => {
   submit(romajiInput.value.trim());
 });
 
+inputForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  submit(romajiInput.value.trim());
+});
+
     function startQuiz() {
       if (session.pack === "kanji" && session.mode === "exam") {
         session.examQueue = buildExamQueue(session.rank);
@@ -1029,6 +1036,7 @@ inputForm?.addEventListener("submit", (e) => {
   </script>
 </body>
 </html>
+
 
 
 
