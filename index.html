@@ -143,20 +143,13 @@ lastInfinite.textContent =
 }
 
 
-themeToggle.addEventListener("click",()=>{
-
-const state = loadState()
-
-state.ui = state.ui || {theme:"dark"}
-
-state.ui.theme =
-state.ui.theme === "dark" ? "light" : "dark"
-
-localStorage.setItem("jpquiz-state",JSON.stringify(state))
-
-applyTheme(state.ui.theme)
-
-})
+themeToggle?.addEventListener("click",()=>{
+  const state = loadState();
+  state.ui = state.ui || { theme: "dark" };
+  state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
+  saveState(state);
+  applyTheme(state.ui.theme)
+});
 
 
 fullscreenBtn.addEventListener("click",requestFullscreenToggle)
@@ -168,3 +161,4 @@ refreshUI()
 
 </body>
 </html>
+
