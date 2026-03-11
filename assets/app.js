@@ -154,7 +154,10 @@ export function chooseModePro(session) {
     const lastWasInput = last.endsWith("_to_romaji");
     const preferredWantInput = !lastWasInput;
 
-    const preferred = pool.filter(mode => mode.endsWith("_to_romaji") === preferredWantInput);
+    const preferred = pool.filter(
+      mode => mode.endsWith("_to_romaji") === preferredWantInput
+    );
+
     if (preferred.length > 0) {
       pool = preferred;
     }
@@ -174,6 +177,7 @@ export const RANKS = RANK_ORDER;
 export function isRankUnlocked(unlockedRank, targetRank) {
   const u = RANK_ORDER.indexOf(unlockedRank || "E");
   const t = RANK_ORDER.indexOf(targetRank);
+
   if (t === -1) return false;
   return t <= (u === -1 ? 0 : u);
 }
@@ -185,7 +189,7 @@ export function getNextRank(rank) {
 }
 
 // ==============================
-// COMPTEUR DE KANJI PAR RANG
+// LIEN RANG -> GRADE
 // ==============================
 export function getGradeValueFromRank(rank) {
   const map = {
@@ -201,6 +205,9 @@ export function getGradeValueFromRank(rank) {
   return map[rank] ?? 1;
 }
 
+// ==============================
+// KANJI CUMULÉS JUSQU'AU RANG
+// ==============================
 export function countKanjiUpToRank(rank, kanjiList) {
   const maxGrade = getGradeValueFromRank(rank);
 
@@ -214,7 +221,7 @@ export function countKanjiUpToRank(rank, kanjiList) {
 }
 
 // ==============================
-// XP PAR NIVEAU
+// MULTIPLICATEUR DU RANG
 // ==============================
 export function getRankMultiplier(rank, kanjiList) {
   const totalKanji = countKanjiUpToRank(rank, kanjiList);
@@ -222,6 +229,9 @@ export function getRankMultiplier(rank, kanjiList) {
   return Math.max(1, Math.round(raw));
 }
 
+// ==============================
+// CAP D'XP DU NIVEAU ACTUEL
+// ==============================
 export function getLevelXpCap(rank, level, kanjiList) {
   const safeLevel = Math.min(5, Math.max(1, Number(level) || 1));
   const multiplier = getRankMultiplier(rank, kanjiList);
@@ -230,7 +240,7 @@ export function getLevelXpCap(rank, level, kanjiList) {
 }
 
 // ==============================
-// XP GAGNÉE PAR DIFFICULTÉ
+// XP GAGNÉE SELON LE GRADE KANJI
 // ==============================
 export function getXpForKanjiGrade(grade) {
   const xpTable = {
@@ -256,14 +266,15 @@ export function getStreakBonus(streak) {
   return 0;
 }
 
-// Cette fonction sert ici uniquement au bonus de fin de session.
+// Cette fonction sert au bonus de fin de session.
+// L'XP "de base" est calculée dans quiz.html selon kana/kanji/grade.
 export function getSessionXpGain(session) {
   if (session.mode === "exam") return 0;
   return getStreakBonus(session.bestStreakThisSession || 0);
 }
 
 // ==============================
-// APPLICATION DE L'XP AU NIVEAU
+// APPLIQUER L'XP AU NIVEAU
 // ==============================
 export function applyXpToLevel(progression, xpGain, kanjiList) {
   if (!progression) return progression;
@@ -317,12 +328,11 @@ export function canTakeCurrentRankExam(progression, kanjiList) {
   if (currentLevel < 5) return false;
 
   const capLevel5 = getLevelXpCap(currentRank, 5, kanjiList);
-
   return currentXp >= capLevel5;
 }
 
 // ==============================
-// RANK UP
+// PASSAGE AU RANG SUIVANT
 // ==============================
 export function rankUp(progression) {
   const next = getNextRank(progression.currentRank);
@@ -334,20 +344,4 @@ export function rankUp(progression) {
   progression.levelXp = 0;
 
   return progression;
-}
-html,
-body {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
 }
