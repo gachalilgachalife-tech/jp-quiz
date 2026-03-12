@@ -104,6 +104,8 @@ body{
   height:26px;
   padding:0 10px;
   font-size:12px;
+  position:relative;
+  top:2px
 }
 
 .card.center{
@@ -330,4 +332,5 @@ input:focus{
   gap: 10px;
   flex-wrap:wrap;
 }
+
 
