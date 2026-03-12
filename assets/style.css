@@ -919,7 +919,8 @@ button.selected {
    /* ===== MENU KANJI : bouton sélectionné ===== */
 #kanjiSelect .btn.selected,
 #kanjiSelect button.selected,
-#kanjiSelect [data-kmode].selected {
+#kanjiSelect [data-kmode].selected,
+#rankList .selected {
   background: linear-gradient(90deg, #3b82f6, #6366f1) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
@@ -976,4 +977,5 @@ button.selected {
    color: white !important;
    box-shadow: 0 0 0 2px rgba(96,165,250,0.9) !important;
 }
+
 
