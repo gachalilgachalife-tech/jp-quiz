@@ -564,103 +564,103 @@
     }
 
     function buildKanjiSelector() {
-      const progression = app.progression;
-      const unlocked = progression?.unlockedRank ?? "E";
-      const currentRank = progression?.currentRank ?? "E";
+  const progression = app.progression;
+  const unlocked = progression?.unlockedRank ?? "E";
+  const currentRank = progression?.currentRank ?? "E";
 
-      let chosenRank = null;
-      let chosenMode = null;
+  let chosenRank = null;
+  let chosenMode = null;
 
-      rankList.innerHTML = "";
+  rankList.innerHTML = "";
 
-      for (const r of RANKS) {
-        const ok = isRankUnlocked(unlocked, r);
+  for (const r of RANKS) {
+    const ok = isRankUnlocked(unlocked, r);
 
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "btn secondary";
-        b.textContent = ok ? r : `${r} 🔒`;
-        b.disabled = !ok;
-        b.style.opacity = ok ? "1" : "0.45";
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn secondary";
+    b.textContent = ok ? r : `${r} 🔒`;
+    b.disabled = !ok;
+    b.style.opacity = ok ? "1" : "0.45";
 
-        b.addEventListener("click", () => {
-          [...rankList.querySelectorAll("button")].forEach(x => {
-            x.classList.remove("selected");
-          });
-
-          b.classList.add("selected");
-          chosenRank = r;
-          refreshExamAvailability();
-        });
-
-        rankList.appendChild(b);
-      }
-
-      function refreshExamAvailability() {
-        const modeButtons = [...document.querySelectorAll("[data-kmode]")];
-
-        modeButtons.forEach(btn => {
-          const mode = btn.dataset.kmode;
-
-          if (mode !== "exam") {
-            btn.disabled = !chosenRank;
-            return;
-          }
-
-          if (!chosenRank) {
-            btn.disabled = true;
-            return;
-          }
-
-          const olderExam = isOlderRankThanCurrent(chosenRank, currentRank);
-          const currentExam = isCurrentRank(chosenRank, currentRank);
-
-          if (olderExam) {
-            btn.disabled = false;
-            return;
-          }
-
-          if (currentExam) {
-            btn.disabled = !canTakeCurrentRankExam(progression, KANJI_DATA);
-            return;
-          }
-
-          btn.disabled = true;
-        });
-
-        if (chosenMode === "exam") {
-          const examBtn = document.querySelector('[data-kmode="exam"]');
-          if (examBtn?.disabled) {
-            chosenMode = null;
-            examBtn.classList.remove("selected");
-          }
-        }
-
-        btnStartKanji.disabled = !(chosenRank && chosenMode);
-      }
-
-      document.querySelectorAll("[data-kmode]").forEach(btn => {
-        btn.onclick = () => {
-          if (btn.disabled) return;
-
-          document.querySelectorAll("[data-kmode]").forEach(x => {
-            x.classList.remove("selected");
-          });
-
-          btn.classList.add("selected");
-          chosenMode = btn.dataset.kmode;
-          btnStartKanji.disabled = !(chosenRank && chosenMode);
-        };
+    b.addEventListener("click", () => {
+      [...rankList.querySelectorAll("button")].forEach(x => {
+        x.classList.remove("selected");
       });
 
-      btnStartKanji.onclick = () => {
-        const go = `./quiz.html?pack=kanji&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
-        location.href = go;
-      };
-
+      b.classList.add("selected");
+      chosenRank = r;
       refreshExamAvailability();
+    });
+
+    rankList.appendChild(b);
+  }
+
+  function refreshExamAvailability() {
+    const modeButtons = [...document.querySelectorAll("[data-kmode]")];
+
+    modeButtons.forEach(btn => {
+      const mode = btn.dataset.kmode;
+
+      if (mode !== "exam") {
+        btn.disabled = !chosenRank;
+        return;
+      }
+
+      if (!chosenRank) {
+        btn.disabled = true;
+        return;
+      }
+
+      const olderExam = isOlderRankThanCurrent(chosenRank, currentRank);
+      const currentExam = isCurrentRank(chosenRank, currentRank);
+
+      if (olderExam) {
+        btn.disabled = false;
+        return;
+      }
+
+      if (currentExam) {
+        btn.disabled = !canTakeCurrentRankExam(progression, KANJI_DATA);
+        return;
+      }
+
+      btn.disabled = true;
+    });
+
+    if (chosenMode === "exam") {
+      const examBtn = document.querySelector('[data-kmode="exam"]');
+      if (examBtn?.disabled) {
+        chosenMode = null;
+        examBtn.classList.remove("selected");
+      }
     }
 
+    btnStartKanji.disabled = !(chosenRank && chosenMode);
+  }
+
+  document.querySelectorAll("[data-kmode]").forEach(btn => {
+    btn.onclick = () => {
+      if (btn.disabled) return;
+
+      document.querySelectorAll("[data-kmode]").forEach(x => {
+        x.classList.remove("selected");
+      });
+
+      btn.classList.add("selected");
+      chosenMode = btn.dataset.kmode;
+      btnStartKanji.disabled = !(chosenRank && chosenMode);
+    };
+  });
+
+  btnStartKanji.onclick = () => {
+    const go = `./quiz.html?pack=kanji&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
+    location.href = go;
+  };
+
+  refreshExamAvailability();
+}
+    
     function endSession() {
       app = loadState();
       app.progression = app.progression || {
@@ -1030,3 +1030,4 @@
   </script>
 </body>
 </html>
+
