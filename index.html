@@ -87,6 +87,13 @@ getLevelXpCap
 
 import { KANJI } from "./assets/kanji.js"
 
+  import {
+    loadState,
+    saveState,
+    applyTheme,
+    requestFullscreenToggle,
+    getLevelXpCap
+  } from "./assets/app.js";
 
 const themeToggle = document.getElementById("themeToggle")
 const fullscreenBtn = document.getElementById("fullscreenBtn")
@@ -145,10 +152,14 @@ lastInfinite.textContent =
 
 themeToggle?.addEventListener("click",()=>{
   const state = loadState();
+  
   state.ui = state.ui || { theme: "dark" };
   state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
+  
   saveState(state);
-  applyTheme(state.ui.theme)
+  applyTheme(state.ui.theme);
+
+  app = state;
 });
 
 
@@ -161,4 +172,5 @@ refreshUI()
 
 </body>
 </html>
+
 
