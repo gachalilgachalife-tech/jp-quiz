@@ -1,19 +1,28 @@
-/* ===== BASE ===== */
+/* ===============================
+   RESET
+================================ */
 
-*{
+*,
+*::before,
+*::after{
 box-sizing:border-box;
 margin:0;
 padding:0;
 }
 
 html,body{
+width:100%;
+max-width:100%;
+overflow-x:hidden;
 font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
 background:var(--bg);
 color:var(--text);
-min-height:100vh;
 }
 
-/* ===== THEMES ===== */
+
+/* ===============================
+   THEMES
+================================ */
 
 :root{
 
@@ -32,13 +41,15 @@ min-height:100vh;
 --good:#22c55e;
 --bad:#ef4444;
 
+--shadow:0 10px 30px rgba(0,0,0,.4);
+
 }
 
 :root[data-theme="light"]{
 
---bg:#f6f8fb;
+--bg:#f5f7fb;
 --card:#ffffff;
---card2:#f1f5f9;
+--card2:#f3f4f6;
 
 --text:#0f172a;
 --muted:#64748b;
@@ -48,9 +59,33 @@ min-height:100vh;
 --primary:#2563eb;
 --primary2:#6366f1;
 
+--shadow:0 8px 20px rgba(0,0,0,.08);
+
 }
 
-/* ===== TOPBAR ===== */
+
+/* ===============================
+   LAYOUT
+================================ */
+
+.container{
+max-width:920px;
+margin:auto;
+padding:24px;
+}
+
+.card{
+background:var(--card);
+border:1px solid var(--border);
+border-radius:18px;
+box-shadow:var(--shadow);
+padding:26px;
+}
+
+
+/* ===============================
+   TOPBAR
+================================ */
 
 .topbar{
 
@@ -58,31 +93,38 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 
-padding:14px 20px;
+padding:14px 22px;
 
-background:var(--card);
 border-bottom:1px solid var(--border);
 
+background:var(--card);
 }
 
 .brand{
 display:flex;
-gap:10px;
 align-items:center;
+gap:10px;
 font-weight:900;
+font-size:18px;
 }
 
 .dot{
-width:8px;
-height:8px;
-background:var(--primary);
+width:10px;
+height:10px;
 border-radius:50%;
+background:var(--primary);
+}
+
+.brand-title{
+font-weight:900;
 }
 
 .chip{
 
 font-size:12px;
-padding:4px 8px;
+font-weight:800;
+
+padding:3px 8px;
 
 border-radius:999px;
 
@@ -94,76 +136,69 @@ border:1px solid var(--border);
 .top-actions{
 display:flex;
 gap:8px;
+flex-wrap:wrap;
 }
 
-/* ===== CONTAINER ===== */
 
-.container{
-
-max-width:900px;
-margin:auto;
-
-padding:24px;
-
-}
-
-.card{
-
-background:var(--card);
-
-border:1px solid var(--border);
-border-radius:16px;
-
-padding:24px;
-
-}
-
-/* ===== BUTTON ===== */
+/* ===============================
+   BUTTONS
+================================ */
 
 .btn{
 
-border-radius:10px;
+border-radius:12px;
 padding:10px 16px;
 
 border:1px solid var(--border);
-
-background:var(--card2);
 
 cursor:pointer;
 
 font-weight:700;
 
-text-decoration:none;
-
 display:inline-flex;
 align-items:center;
 justify-content:center;
 
+text-decoration:none;
+
+transition:.15s;
+
+}
+
+.btn:hover{
+transform:translateY(-1px);
 }
 
 .btn.primary{
 
 background:linear-gradient(90deg,var(--primary),var(--primary2));
-border:none;
 color:white;
+border:none;
 
 }
 
 .btn.secondary{
 
 background:var(--card2);
+color:var(--text);
 
 }
 
-.btn:hover{
-opacity:.9;
+.btn.big{
+
+font-size:20px;
+padding:16px 24px;
+
 }
 
-/* ===== QUIZ ===== */
+
+/* ===============================
+   QUIZ
+================================ */
 
 .prompt{
 
-font-size:48px;
+font-size:54px;
 font-weight:900;
 
 text-align:center;
@@ -181,12 +216,16 @@ margin-top:6px;
 
 }
 
-/* ===== INPUT ===== */
+
+/* ===============================
+   INPUT
+================================ */
 
 .input-row{
 
 display:flex;
 justify-content:center;
+align-items:center;
 gap:10px;
 
 margin-top:16px;
@@ -195,20 +234,56 @@ margin-top:16px;
 
 input{
 
-font-size:16px;
+font-size:16px; /* important pour iPhone */
 
 border-radius:10px;
 
 border:1px solid var(--border);
 
-padding:10px 12px;
+padding:12px 14px;
 
 background:var(--card2);
+
 color:var(--text);
+
+outline:none;
+
+min-width:220px;
 
 }
 
-/* ===== QCM ===== */
+#romajiInput{
+
+font-size:16px;
+min-height:48px;
+
+}
+
+
+/* ===============================
+   CAPS INDICATOR
+================================ */
+
+.caps{
+
+font-size:12px;
+font-weight:900;
+
+color:var(--muted);
+
+opacity:.3;
+
+}
+
+.caps.on{
+opacity:1;
+color:var(--bad);
+}
+
+
+/* ===============================
+   QCM
+================================ */
 
 .qcm{
 
@@ -222,14 +297,25 @@ margin-top:20px;
 
 }
 
-/* ===== FEEDBACK ===== */
+.qcm-btn{
+
+padding:14px;
+font-size:16px;
+
+}
+
+
+/* ===============================
+   FEEDBACK
+================================ */
 
 .feedback{
 
 text-align:center;
 font-weight:900;
 
-margin-top:10px;
+margin-top:14px;
+min-height:24px;
 
 }
 
@@ -241,12 +327,17 @@ color:var(--good);
 color:var(--bad);
 }
 
-/* ===== HUD ===== */
+
+/* ===============================
+   HUD
+================================ */
 
 .hud{
 
 display:flex;
 justify-content:space-between;
+align-items:center;
+
 margin-bottom:10px;
 
 font-weight:700;
@@ -260,7 +351,82 @@ color:var(--muted);
 
 }
 
-/* ===== FOOTER ===== */
+.hud-xp{
+color:var(--primary);
+}
+
+.hud-streak{
+color:orange;
+}
+
+
+/* ===============================
+   PROGRESS BAR
+================================ */
+
+.progress-box{
+
+margin:24px 0;
+
+}
+
+.progress-bar{
+
+height:12px;
+
+border-radius:999px;
+
+background:var(--card2);
+
+border:1px solid var(--border);
+
+overflow:hidden;
+
+}
+
+.progress-fill{
+
+height:100%;
+
+width:0%;
+
+background:linear-gradient(90deg,var(--primary),var(--primary2));
+
+transition:.25s;
+
+}
+
+.xp-text{
+
+margin-top:6px;
+text-align:center;
+
+font-weight:700;
+
+color:var(--muted);
+
+}
+
+
+/* ===============================
+   MENU
+================================ */
+
+.menu-buttons{
+
+display:flex;
+flex-direction:column;
+
+gap:16px;
+
+margin-top:24px;
+
+}
+
+
+/* ===============================
+   FOOTER
+================================ */
 
 .footer{
 
@@ -274,16 +440,23 @@ flex-wrap:wrap;
 
 }
 
-/* ===== MOBILE ===== */
 
-@media(max-width:768px){
+/* ===============================
+   MOBILE
+================================ */
+
+@media (max-width:768px){
 
 .container{
 padding:16px;
 }
 
 .prompt{
-font-size:38px;
+font-size:42px;
+}
+
+.card{
+padding:20px;
 }
 
 }
