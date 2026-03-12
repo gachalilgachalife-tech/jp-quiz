@@ -29,9 +29,7 @@
       margin-right: auto;
     }
 
-    .correction-panel.show {
-      display: block;
-    }
+    .correction-panel.show { display: block; }
 
     .corr-title {
       font-weight: 900;
@@ -117,9 +115,7 @@
       backdrop-filter: blur(4px);
     }
 
-    .rankup-overlay.show {
-      display: flex;
-    }
+    .rankup-overlay.show { display: flex; }
 
     .rankup-card {
       min-width: 280px;
@@ -178,7 +174,6 @@
   <main class="container">
     <section class="card quiz">
 
-      <!-- MENU KANA -->
       <div id="kanaSelect" class="select-wrap">
         <div class="panel" style="margin-bottom:12px;">
           <div class="panel-title">KANA — Choix du mode</div>
@@ -200,7 +195,6 @@
         <div class="divider"></div>
       </div>
 
-      <!-- MENU KANJI -->
       <div id="kanjiSelect" class="select-wrap">
         <div class="panel" style="margin-bottom:12px;">
           <div class="panel-title">KANJI — Choix du rang</div>
@@ -238,7 +232,6 @@
         <div class="divider"></div>
       </div>
 
-      <!-- QUIZ -->
       <div class="hud" id="hud">
         <div class="hud-left">
           <div class="hud-score" id="hudScore">—</div>
@@ -383,7 +376,6 @@
     const promptEl = document.getElementById("prompt");
     const hintEl = document.getElementById("hint");
 
-    const answer = document.getElementById("answer");
     const inputForm = document.getElementById("inputRow");
     const inputRow = document.getElementById("inputRow");
     const romajiInput = document.getElementById("romajiInput");
@@ -543,7 +535,7 @@
       hud.style.display = "none";
       feedbackEl.style.display = "none";
       promptEl.style.display = "none";
-      answer.style.display = "none";
+      document.getElementById("answer").style.display = "none";
       footer.style.display = "none";
     }
 
@@ -551,7 +543,7 @@
       hud.style.display = "flex";
       feedbackEl.style.display = "";
       promptEl.style.display = "";
-      answer.style.display = "";
+      document.getElementById("answer").style.display = "";
       footer.style.display = "";
     }
 
@@ -598,8 +590,11 @@
 
           b.classList.add("selected");
           chosenRank = r;
-          refreshExamAvailabilty();
+          refreshExamAvailability();
         });
+
+        rankList.appendChild(b);
+      }
 
       function refreshExamAvailability() {
         const modeButtons = [...document.querySelectorAll("[data-kmode]")];
@@ -644,19 +639,19 @@
         btnStartKanji.disabled = !(chosenRank && chosenMode);
       }
 
-document.querySelectorAll("[data-kmode]").forEach(btn => {
-  btn.onclick = () => {
-    if (btn.disabled) return;
+      document.querySelectorAll("[data-kmode]").forEach(btn => {
+        btn.onclick = () => {
+          if (btn.disabled) return;
 
-    document.querySelectorAll("[data-kmode]").forEach(x => {
-      x.classList.remove("selected");
-    });
+          document.querySelectorAll("[data-kmode]").forEach(x => {
+            x.classList.remove("selected");
+          });
 
-    btn.classList.add("selected");
-    chosenMode = btn.dataset.kmode;
-    btnStartKanji.disabled = !(chosenRank && chosenMode);
-  };
-});
+          btn.classList.add("selected");
+          chosenMode = btn.dataset.kmode;
+          btnStartKanji.disabled = !(chosenRank && chosenMode);
+        };
+      });
 
       btnStartKanji.onclick = () => {
         const go = `./quiz.html?pack=kanji&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
@@ -979,6 +974,7 @@ document.querySelectorAll("[data-kmode]").forEach(btn => {
       state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
       saveState(state);
       applyTheme(state.ui.theme);
+      app = state;
     });
 
     fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
@@ -1034,8 +1030,3 @@ document.querySelectorAll("[data-kmode]").forEach(btn => {
   </script>
 </body>
 </html>
-
-
-
-
-
