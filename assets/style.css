@@ -459,4 +459,10 @@ font-size:42px;
 padding:20px;
 }
 
+.btn.selected,
+btn.primary.selected,
+button.selected {
+   outline: 2px solid #60a5fa;
+   outline-offset: 2px;
+   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
 }
