@@ -593,16 +593,13 @@
 
         b.addEventListener("click", () => {
           [...rankList.querySelectorAll("button")].forEach(x => {
-            x.classList.remove("primary", "selected");
+            x.classList.remove("selected");
           });
-          
-          b.classList.add("primary", "selected");
-          chosenRank = r;
-          refreshExamAvailability();
-        });
 
-        rankList.appendChild(b);
-      }
+          b.classList.add("selected");
+          chosenRank = r;
+          refreshExamAvailabilty();
+        });
 
       function refreshExamAvailability() {
         const modeButtons = [...document.querySelectorAll("[data-kmode]")];
@@ -640,22 +637,22 @@
           const examBtn = document.querySelector('[data-kmode="exam"]');
           if (examBtn?.disabled) {
             chosenMode = null;
-            examBtn.classList.remove("primary", "selected");
+            examBtn.classList.remove("selected");
           }
         }
 
         btnStartKanji.disabled = !(chosenRank && chosenMode);
       }
 
-      document.querySelectorAll("[data-kmode]").forEach(btn => {
+document.querySelectorAll("[data-kmode]").forEach(btn => {
   btn.onclick = () => {
     if (btn.disabled) return;
 
     document.querySelectorAll("[data-kmode]").forEach(x => {
-      x.classList.remove("primary", "selected");
+      x.classList.remove("selected");
     });
 
-    btn.classList.add("primary", "selected");
+    btn.classList.add("selected");
     chosenMode = btn.dataset.kmode;
     btnStartKanji.disabled = !(chosenRank && chosenMode);
   };
@@ -1037,6 +1034,7 @@
   </script>
 </body>
 </html>
+
 
 
 
