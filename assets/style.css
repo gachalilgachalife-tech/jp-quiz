@@ -57,7 +57,9 @@ body{
 .brand{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:12px;
+  font-weight:900;
+  line-height:1;
 }
 
 .dot{
@@ -93,6 +95,15 @@ body{
   background: var(--card);
   box-shadow: var(--shadow);
   padding: 18px;
+}
+
+.chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:26px;
+  padding:0 10px;
+  font-size:12px;
 }
 
 .card.center{
@@ -319,3 +330,4 @@ input:focus{
   gap: 10px;
   flex-wrap:wrap;
 }
+
