@@ -150,12 +150,12 @@ lastInfinite.textContent =
 }
 
 
-themeToggle?.addEventListener("click",()=>{
+themeToggle?.addEventListener("click", () => {
   const state = loadState();
-  
+
   state.ui = state.ui || { theme: "dark" };
   state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
-  
+
   saveState(state);
   applyTheme(state.ui.theme);
 
@@ -172,5 +172,6 @@ refreshUI()
 
 </body>
 </html>
+
 
 
