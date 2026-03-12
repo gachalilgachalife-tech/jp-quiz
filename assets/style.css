@@ -918,6 +918,7 @@ flex-wrap:wrap;
     0 0 18px rgba(59, 130, 246, 0.35) !important;
 }
 
+/* Bouton Examen : toujours bleu */
 #kanjiSelect [data-kmode="exam"] {
   background: linear-gradient(90deg, #4f8cff, #6b6bff) !important;
   color: #ffffff !important;
@@ -927,6 +928,7 @@ flex-wrap:wrap;
     0 0 14px rgba(79, 140, 255, 0.22) !important;
 }
 
+/* Bouton Examen verrouillé */
 #kanjiSelect [data-kmode="exam"]:disabled {
   opacity: 0.45 !important;
   filter: grayscale(0.15);
@@ -964,6 +966,7 @@ flex-wrap:wrap;
    color: white !important;
    box-shadow: 0 0 0 2px rgba(96,165,250,0.9) !important;
 }
+
 
 
 
