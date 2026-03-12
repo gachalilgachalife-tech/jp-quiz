@@ -889,34 +889,23 @@ flex-wrap:wrap;
 
 @media (max-width:768px){
 
-.container{
-padding:16px;
+  .container{
+    padding:16px;
+  }
+
+  .prompt{
+    font-size:42px;
+  }
+
+  .card{
+    padding:20px;
+  }
 }
 
-.prompt{
-font-size:42px;
-}
+/* ===============================
+   MENU KANJI : SÉLECTION
+================================ */
 
-.card{
-padding:20px;
-}
-
-.btn.selected,
-btn.primary.selected,
-button.selected {
-   outline: 2px solid #60a5fa;
-   outline-offset: 2px;
-   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
-}
-
-.btn.selected {
-   backround: linear-gradient(90deg, var(--primary), var(--primary2)), !important;
-   color: white !important;
-   border: 1px solid transparent !important;
-   box-shadow: 0 0 0 2px rgba(96,195,250, 0.9) !important;
-}
-
-   /* ===== MENU KANJI : bouton sélectionné ===== */
 #kanjiSelect .btn.selected,
 #kanjiSelect button.selected,
 #kanjiSelect [data-kmode].selected,
@@ -929,7 +918,6 @@ button.selected {
     0 0 18px rgba(59, 130, 246, 0.35) !important;
 }
 
-/* ===== Bouton Examen : look bleu éclatant même non sélectionné ===== */
 #kanjiSelect [data-kmode="exam"] {
   background: linear-gradient(90deg, #4f8cff, #6b6bff) !important;
   color: #ffffff !important;
@@ -939,7 +927,6 @@ button.selected {
     0 0 14px rgba(79, 140, 255, 0.22) !important;
 }
 
-/* ===== Bouton Examen verrouillé / disabled ===== */
 #kanjiSelect [data-kmode="exam"]:disabled {
   opacity: 0.45 !important;
   filter: grayscale(0.15);
@@ -977,5 +964,6 @@ button.selected {
    color: white !important;
    box-shadow: 0 0 0 2px rgba(96,165,250,0.9) !important;
 }
+
 
 
