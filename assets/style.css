@@ -473,3 +473,42 @@ button.selected {
    border: 1px solid transparent !important;
    box-shadow: 0 0 0 2px rgba(96,195,250, 0.9) !important;
 }
+
+   /* ===== MENU KANJI : bouton sélectionné ===== */
+#kanjiSelect .btn.selected,
+#kanjiSelect button.selected,
+#kanjiSelect [data-kmode].selected {
+  background: linear-gradient(90deg, #3b82f6, #6366f1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow:
+    0 0 0 2px rgba(96, 165, 250, 0.95),
+    0 0 18px rgba(59, 130, 246, 0.35) !important;
+}
+
+/* ===== Bouton Examen : look bleu éclatant même non sélectionné ===== */
+#kanjiSelect [data-kmode="exam"] {
+  background: linear-gradient(90deg, #4f8cff, #6b6bff) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.35),
+    0 0 14px rgba(79, 140, 255, 0.22) !important;
+}
+
+/* ===== Bouton Examen verrouillé / disabled ===== */
+#kanjiSelect [data-kmode="exam"]:disabled {
+  opacity: 0.45 !important;
+  filter: grayscale(0.15);
+  cursor: not-allowed;
+}
+
+/* ===== Rangs sélectionnés ===== */
+#rankList .selected {
+  background: linear-gradient(90deg, #3b82f6, #6366f1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow:
+    0 0 0 2px rgba(96, 165, 250, 0.95),
+    0 0 18px rgba(59, 130, 246, 0.35) !important;
+}
