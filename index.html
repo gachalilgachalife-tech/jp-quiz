@@ -20,7 +20,7 @@
 <span class="brand-title">JP Quiz</span>
 <span id="rankChip" class="chip">—</span>
 </div>
-
+impo
 <div class="top-actions">
 <button id="themeToggle" class="btn secondary">🌙 / ☀️</button>
 <button id="fullscreenBtn" class="btn secondary">Plein écran</button>
@@ -95,6 +95,23 @@ import { KANJI } from "./assets/kanji.js"
     getLevelXpCap
   } from "./assets/app.js";
 
+const themeToggle = document.getElementById("themeToggle");
+
+  let app = loadstate();
+  applyTheme(app.ui?.theme ?? "dark");
+
+themeToggle?.addEventListener("click", () => {
+  const state = loadState();
+  state.ui = state.ui || { theme: "dark" };
+  state.ui.theme =
+    state.ui.theme === "dark"
+      ? "light"
+      : "dark";
+  saveState(state);
+  applyTheme(state.ui.theme);
+  app = state;
+});
+  
 const themeToggle = document.getElementById("themeToggle")
 const fullscreenBtn = document.getElementById("fullscreenBtn")
 
@@ -172,6 +189,7 @@ refreshUI()
 
 </body>
 </html>
+
 
 
 
