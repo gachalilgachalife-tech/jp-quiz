@@ -222,7 +222,7 @@
             <div class="select-row">
               <button class="btn secondary" type="button" data-kmode="normal">Normal</button>
               <button class="btn secondary" type="button" data-kmode="infini">Infini</button>
-              <button class="btn primary" type="button" data-kmode="exam">Examen</button>
+              <button class="btn secondary" type="button" data-kmode="exam">Examen</button>
             </div>
             <p class="hint" style="margin:10px 0 0;">
               Normal / Infini : seulement le grade choisi. Examen : grade choisi + 10 des grades précédents.
@@ -592,8 +592,11 @@
         b.style.opacity = ok ? "1" : "0.45";
 
         b.addEventListener("click", () => {
-          [...rankList.querySelectorAll("button")].forEach(x => x.classList.remove("primary"));
-          b.classList.add("primary");
+          [...rankList.querySelectorAll("button")].forEach(x => {
+            x.classList.remove("primary", "selected");
+          });
+          
+          b.classList.add("primary", "selected");
           chosenRank = r;
           refreshExamAvailability();
         });
@@ -637,6 +640,7 @@
           const examBtn = document.querySelector('[data-kmode="exam"]');
           if (examBtn?.disabled) {
             chosenMode = null;
+            examBtn.classList.remove("primary", "selected");
           }
         }
 
@@ -644,15 +648,18 @@
       }
 
       document.querySelectorAll("[data-kmode]").forEach(btn => {
-        btn.onclick = () => {
-          if (btn.disabled) return;
+  btn.onclick = () => {
+    if (btn.disabled) return;
 
-          document.querySelectorAll("[data-kmode]").forEach(x => x.classList.remove("primary"));
-          btn.classList.add("primary");
-          chosenMode = btn.dataset.kmode;
-          btnStartKanji.disabled = !(chosenRank && chosenMode);
-        };
-      });
+    document.querySelectorAll("[data-kmode]").forEach(x => {
+      x.classList.remove("primary", "selected");
+    });
+
+    btn.classList.add("primary", "selected");
+    chosenMode = btn.dataset.kmode;
+    btnStartKanji.disabled = !(chosenRank && chosenMode);
+  };
+});
 
       btnStartKanji.onclick = () => {
         const go = `./quiz.html?pack=kanji&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
@@ -1030,4 +1037,5 @@
   </script>
 </body>
 </html>
+
 
