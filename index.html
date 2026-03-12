@@ -1,196 +1,350 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>JP Quiz</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+  <style>
+    .home-card {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    .home-hero {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-<title>JP Quiz</title>
+    .home-hero .title {
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      font-weight: 1000;
+      line-height: 1;
+    }
 
-<link rel="stylesheet" href="./assets/style.css">
+    .home-hero .sub {
+      color: var(--muted);
+      font-size: clamp(1rem, 2.2vw, 1.35rem);
+    }
 
+    .home-actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .home-actions .btn {
+      min-width: 170px;
+      min-height: 54px;
+      font-size: 1.05rem;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .panel-title {
+      font-size: 1.35rem;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+
+    .panel-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .kpi {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .kpi:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .kpi span {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .kpi strong {
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .level-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+
+    .level-progress-text {
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .level-progress-bar {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card2);
+      overflow: hidden;
+    }
+
+    .level-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2));
+      transition: width 0.25s ease;
+    }
+
+    .home-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 840px) {
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-
 <body>
 
-<header class="topbar">
-
-<div class="brand">
-<span class="dot"></span>
-<span class="brand-title">JP Quiz</span>
-<span id="rankChip" class="chip">—</span>
-</div>
-<div class="top-actions">
-<button id="themeToggle" class="btn secondary">🌙 / ☀️</button>
-<button id="fullscreenBtn" class="btn secondary">Plein écran</button>
-</div>
-
-</header>
-
-
-<main class="container">
-
-<section class="card">
-
-<h1 class="title">Menu principal</h1>
-
-<div class="progress-box">
-
-<div id="rankLabel" class="rank-label">Rang —</div>
-
-<div id="levelLabel" class="level-label">Niveau —</div>
-
-<div class="progress-bar">
-<div id="xpFill" class="progress-fill"></div>
-</div>
-
-<div id="xpText" class="xp-text">—</div>
-
-</div>
-
-
-<div class="menu-buttons">
-
-<a class="btn primary big" href="./quiz.html?pack=kana">
-Kana</a>
-
-<a class="btn primary big" href="./quiz.html?pack=kanji">
-Kanji</a>
-
-</div>
-
-
-<div class="stats">
-
-<div id="bestStreak">Streak max : —</div>
-
-<div id="lastNormal">Dernier score normal : —</div>
-
-<div id="lastInfinite">Infini : —</div>
-
-</div>
-
-</section>
-
-</main>
-
-
-<script type="module">
-
-import {
-loadState,
-applyTheme,
-requestFullscreenToggle,
-getLevelXpCap
-} from "./assets/app.js"
-
-import { KANJI } from "./assets/kanji.js"
-
-  import {
-    loadState,
-    saveState,
-    applyTheme,
-    requestFullscreenToggle,
-    getLevelXpCap
-  } from "./assets/app.js";
-
-const themeToggle = document.getElementById("themeToggle");
-
-  let app = loadstate();
-  applyTheme(app.ui?.theme ?? "dark");
-
-themeToggle?.addEventListener("click", () => {
-  const state = loadState();
-  state.ui = state.ui || { theme: "dark" };
-  state.ui.theme =
-    state.ui.theme === "dark"
-      ? "light"
-      : "dark";
-  saveState(state);
-  applyTheme(state.ui.theme);
-  app = state;
-});
-  
-const themeToggle = document.getElementById("themeToggle")
-const fullscreenBtn = document.getElementById("fullscreenBtn")
-
-const rankChip = document.getElementById("rankChip")
-
-const rankLabel = document.getElementById("rankLabel")
-const levelLabel = document.getElementById("levelLabel")
-
-const xpFill = document.getElementById("xpFill")
-const xpText = document.getElementById("xpText")
-
-const bestStreak = document.getElementById("bestStreak")
-const lastNormal = document.getElementById("lastNormal")
-const lastInfinite = document.getElementById("lastInfinite")
-
-
-let app = loadState()
-
-applyTheme(app.ui?.theme ?? "dark")
-
-
-function refreshUI(){
-
-const progression = app.progression || {}
-
-const rank = progression.currentRank || "E"
-const level = progression.level || 1
-const xp = progression.levelXp || 0
-
-const cap = getLevelXpCap(rank, level, KANJI)
-
-rankChip.textContent = `Rang ${rank}`
-
-rankLabel.textContent = `Rang actuel : ${rank}`
-
-levelLabel.textContent = `Niveau ${level}`
-
-xpText.textContent = `${xp} / ${cap}`
-
-const percent = cap > 0 ? Math.min(100,(xp/cap)*100) : 0
-
-xpFill.style.width = percent + "%"
-
-bestStreak.textContent =
-`Streak max : ${progression.bestStreak ?? 0}`
-
-lastNormal.textContent =
-`Dernier score normal : ${app.last?.normalScore ?? "-"}`
-
-lastInfinite.textContent =
-`Infini (questions pour 100) : ${app.last?.infiniteQuestionsFor100 ?? "-"}`
-
-}
-
-
-themeToggle?.addEventListener("click", () => {
-  const state = loadState();
-
-  state.ui = state.ui || { theme: "dark" };
-  state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
-
-  saveState(state);
-  applyTheme(state.ui.theme);
-
-  app = state;
-});
-
-
-fullscreenBtn.addEventListener("click",requestFullscreenToggle)
-
-
-refreshUI()
-
-</script>
-
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="brand-title">JP Quiz</span>
+      <span id="rankChip" class="chip">Rang —</span>
+    </div>
+
+    <div class="top-actions">
+      <button id="themeToggle" class="btn secondary" type="button">🌙 / ☀️</button>
+      <button id="fullscreenBtn" class="btn secondary" type="button">Plein écran</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card home-card">
+
+      <div class="home-hero">
+        <h1 class="title">Quiz Japonais</h1>
+        <p class="sub">
+          Apprends les kana et les kanji avec un système de rang, de niveau, d’examen et de progression.
+        </p>
+      </div>
+
+      <div class="home-actions">
+        <a class="btn primary" href="./quiz.html?pack=kana">KANA</a>
+        <a class="btn primary" href="./quiz.html?pack=kanji">KANJI</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">Progression</div>
+          <div class="panel-body">
+
+            <div class="kpi">
+              <span>Rang</span>
+              <strong id="rank">—</strong>
+            </div>
+
+            <div class="kpi">
+              <span id="levelLabel">Niveau</span>
+              <strong id="levelValue">—</strong>
+            </div>
+
+            <div class="level-progress">
+              <div id="levelProgressText" class="level-progress-text">—</div>
+              <div class="level-progress-bar">
+                <div id="levelProgressFill" class="level-progress-fill"></div>
+              </div>
+            </div>
+
+            <div class="kpi">
+              <span>Meilleure streak</span>
+              <strong id="bestStreak">—</strong>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Dernières performances</div>
+          <div class="panel-body">
+
+            <div class="kpi">
+              <span>Score Normal</span>
+              <strong id="lastNormal">—</strong>
+            </div>
+
+            <div class="kpi">
+              <span>Questions pour 100</span>
+              <strong id="lastInfinite">—</strong>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <p class="home-note">
+        Le mode Examen ne donne pas d’XP. Il sert uniquement à valider le rang suivant quand le niveau 5 est plein.
+      </p>
+
+    </section>
+  </main>
+
+  <script type="module">
+    import {
+      loadState,
+      saveState,
+      applyTheme,
+      requestFullscreenToggle,
+      getLevelXpCap
+    } from "./assets/app.js";
+
+    import { KANJI } from "./assets/kanji.js";
+
+    const themeToggle = document.getElementById("themeToggle");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+    const rankChip = document.getElementById("rankChip");
+    const rankEl = document.getElementById("rank");
+    const levelLabelEl = document.getElementById("levelLabel");
+    const levelValueEl = document.getElementById("levelValue");
+    const levelProgressTextEl = document.getElementById("levelProgressText");
+    const levelProgressFillEl = document.getElementById("levelProgressFill");
+    const bestStreakEl = document.getElementById("bestStreak");
+    const lastNormalEl = document.getElementById("lastNormal");
+    const lastInfiniteEl = document.getElementById("lastInfinite");
+
+    const KANJI_DATA = Array.isArray(KANJI)
+      ? KANJI
+          .map(item => ({
+            ...item,
+            m: Array.isArray(item.m) ? item.m.map(x => String(x).trim()).filter(Boolean) : [],
+            on: Array.isArray(item.on) ? item.on.map(x => String(x).trim()).filter(Boolean) : [],
+            kun: Array.isArray(item.kun) ? item.kun.map(x => String(x).trim()).filter(Boolean) : []
+          }))
+          .filter(item => item.k && item.m.length > 0)
+      : [];
+
+    let app = loadState();
+
+    function refreshTheme() {
+      applyTheme(app.ui?.theme ?? "dark");
+    }
+
+    function refreshUI() {
+      const progression = app.progression || {
+        currentRank: "E",
+        unlockedRank: "E",
+        levelXp: 0,
+        level: 1,
+        bestStreak: 0
+      };
+
+      const currentRank = progression.currentRank ?? "E";
+      const currentLevel = progression.level ?? 1;
+      const currentXp = progression.levelXp ?? 0;
+
+      let levelCap = 100;
+      try {
+        levelCap = getLevelXpCap(currentRank, currentLevel, KANJI_DATA);
+      } catch {
+        levelCap = 100;
+      }
+
+      if (rankChip) rankChip.textContent = `Rang ${currentRank}`;
+      if (rankEl) rankEl.textContent = currentRank;
+
+      if (levelLabelEl) {
+        levelLabelEl.textContent = `Niveau ${currentLevel}`;
+      }
+
+      if (levelValueEl) {
+        levelValueEl.textContent = `${currentXp} / ${levelCap}`;
+      }
+
+      if (levelProgressTextEl) {
+        levelProgressTextEl.textContent = "Progression du niveau actuel";
+      }
+
+      if (levelProgressFillEl) {
+        const percent = levelCap > 0
+          ? Math.min(100, Math.round((currentXp / levelCap) * 100))
+          : 100;
+        levelProgressFillEl.style.width = `${percent}%`;
+      }
+
+      if (bestStreakEl) {
+        bestStreakEl.textContent = progression.bestStreak ?? 0;
+      }
+
+      const last = app.last || {
+        normalScore: null,
+        infiniteQuestionsFor100: null
+      };
+
+      if (lastNormalEl) {
+        lastNormalEl.textContent =
+          last.normalScore != null ? last.normalScore : "—";
+      }
+
+      if (lastInfiniteEl) {
+        lastInfiniteEl.textContent =
+          last.infiniteQuestionsFor100 != null ? last.infiniteQuestionsFor100 : "—";
+      }
+    }
+
+    themeToggle?.addEventListener("click", () => {
+      const state = loadState();
+
+      state.ui = state.ui || { theme: "dark" };
+      state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
+
+      saveState(state);
+
+      app = state;
+      refreshTheme();
+      refreshUI();
+    });
+
+    fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
+
+    refreshTheme();
+    refreshUI();
+  </script>
 </body>
 </html>
-
-
-
-
-
-
