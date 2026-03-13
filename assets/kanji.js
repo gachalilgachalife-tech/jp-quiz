@@ -109,7 +109,6 @@ export const KANJI = [
     "m": [
       "s'agripper",
       "tenir",
-      "mouler (sushis)",
       "soudoyer"
     ],
     "on": [
@@ -573,7 +572,6 @@ export const KANJI = [
       "déménager",
       "changer",
       "inconstant",
-      "prendre (froid, feu)",
       "transférer"
     ],
     "on": [
@@ -718,7 +716,6 @@ export const KANJI = [
     "g": 9,
     "m": [
       "signe de la 12ème branche terrestre",
-      "signe du Porc (zodiaque)",
       "21 à 23 h"
     ],
     "on": [
@@ -767,7 +764,6 @@ export const KANJI = [
     "g": 1,
     "m": [
       "un",
-      "radical un (no. 1)"
     ],
     "on": [
       "イチ",
@@ -907,7 +903,6 @@ export const KANJI = [
     "m": [
       "employé",
       "membre",
-      "nombre (de personnes)",
       "personne en charge"
     ],
     "on": [
@@ -1040,7 +1035,6 @@ export const KANJI = [
     "m": [
       "rime",
       "élégance",
-      "son (phonème)"
     ],
     "on": [
       "イン"
@@ -1140,7 +1134,6 @@ export const KANJI = [
     "g": 9,
     "m": [
       "signe de la 4ème branche terrestre",
-      "signe du Lapin (zodiaque)",
       "5 à 7 heures du matin",
       "Est (90°)"
     ],
@@ -1157,7 +1150,6 @@ export const KANJI = [
     "g": 9,
     "m": [
       "signe de la 2ème branche terrestre",
-      "signe du Boeuf (zodiaque)",
       "1 à 3 heures du matin"
     ],
     "on": [
@@ -1396,7 +1388,6 @@ export const KANJI = [
     "k": "詠",
     "g": 8,
     "m": [
-      "composer (un poème)",
       "récitation",
       "poème",
       "chanson"
@@ -1586,7 +1577,7 @@ export const KANJI = [
     "m": [
       "banquet",
       "fête",
-      "réception (party)",
+      "réception",
       "repos"
     ],
     "on": [
@@ -1923,7 +1914,7 @@ export const KANJI = [
     "m": [
       "aller simple",
       "aller",
-      "parer (coup)",
+      "parer",
       "voyage",
       "parfois"
     ],
@@ -1945,7 +1936,7 @@ export const KANJI = [
       "oui",
       "OK",
       "accepter",
-      "combler (satisfaire)",
+      "combler",
       "répondre"
     ],
     "on": [
@@ -1994,7 +1985,7 @@ export const KANJI = [
       "côté",
       "horizontal",
       "largeur",
-      "trame (tissu)"
+      "trame"
     ],
     "on": [
       "オウ"
@@ -2169,7 +2160,6 @@ export const KANJI = [
     "k": "乙",
     "g": 8,
     "m": [
-      "radical hameçon (no. 5)",
       "chic",
       "signe du 2ème tronc céleste",
       "dernier",
@@ -2273,7 +2263,6 @@ export const KANJI = [
       "au-dessous",
       "descendre",
       "bas",
-      "donner (vous me donnez)",
       "inférieur"
     ],
     "on": [
@@ -2327,7 +2316,7 @@ export const KANJI = [
       "factice",
       "intérim",
       "temporaire",
-      "emprunt (nom d')",
+      "emprunt",
       "informel",
       "ka(na)"
     ],
@@ -2523,7 +2512,7 @@ export const KANJI = [
     "m": [
       "fruit",
       "récompense",
-      "remplir (tâche)",
+      "rempli",
       "achever",
       "compléter",
       "finir",
@@ -2548,8 +2537,8 @@ export const KANJI = [
     "m": [
       "ériger",
       "monter",
-      "suspendre (pont)",
-      "supporter (poids)",
+      "suspendre",
+      "supporter",
       "étagère",
       "construire"
     ],
@@ -2669,7 +2658,7 @@ export const KANJI = [
     "m": [
       "bagages",
       "balancier",
-      "porter (un fardeau)",
+      "porter",
       "épauler (fusil)",
       "cargaison",
       "chargement",
@@ -2807,7 +2796,6 @@ export const KANJI = [
     "m": [
       "croc",
       "défense",
-      "radical défense d'ivoire (no. 92)"
     ],
     "on": [
       "ガ",
@@ -2975,7 +2963,7 @@ export const KANJI = [
       "tourner",
       "fois",
       "rond",
-      "manche (jeu)",
+      "manche",
       "tour",
       "révolution",
       "récurrence",
@@ -3093,7 +3081,7 @@ export const KANJI = [
       "nostalgie",
       "aspirer à",
       "s'attacher à",
-      "manquer (personne)",
+      "manquer",
       "seins"
     ],
     "on": [
@@ -3483,7 +3471,7 @@ export const KANJI = [
       "statut",
       "capacité",
       "caractère",
-      "cas (loi, grammaire)"
+      "cas"
     ],
     "on": [
       "カク",
@@ -3511,7 +3499,7 @@ export const KANJI = [
     "g": 8,
     "m": [
       "coquille",
-      "enveloppe (grain)"
+      "tégument"
     ],
     "on": [
       "カク",
@@ -3602,8 +3590,7 @@ export const KANJI = [
       "angle",
       "coin",
       "carré",
-      "corne",
-      "bois (andouillers)"
+      "corne"
     ],
     "on": [
       "カク"
@@ -3649,7 +3636,6 @@ export const KANJI = [
     "g": 6,
     "m": [
       "tour",
-      "tour (immeuble)",
       "palais"
     ],
     "on": [
@@ -3664,8 +3650,7 @@ export const KANJI = [
       "distance",
       "isoler",
       "séparer",
-      "tous les deux (jours, mois, ..)",
-      "fossé (fig.)"
+      "fossé"
     ],
     "on": [
       "カク"
@@ -3749,7 +3734,6 @@ export const KANJI = [
       "front",
       "tablette",
       "plaque",
-      "peinture (encadrée)",
       "somme",
       "montant",
       "volume"
@@ -3796,7 +3780,7 @@ export const KANJI = [
     "g": 9,
     "m": [
       "chapeau de bambou",
-      "influence (d'une personne)"
+      "influence"
     ],
     "on": [
       "リュウ"
@@ -3828,7 +3812,7 @@ export const KANJI = [
       "couper",
       "séparer",
       "proportion",
-      "pourcentage (10%)"
+      "pourcentage"
     ],
     "on": [
       "カツ"
@@ -3935,7 +3919,7 @@ export const KANJI = [
     "g": 8,
     "m": [
       "contrôle",
-      "cale (coin)"
+      "cale"
     ],
     "on": [
       "カツ"
@@ -3967,7 +3951,7 @@ export const KANJI = [
     "m": [
       "action boursière",
       "titre",
-      "souche (arbre)",
+      "souche",
       "compteur de petites plantes"
     ],
     "on": [
@@ -3981,7 +3965,7 @@ export const KANJI = [
     "k": "蒲",
     "g": 9,
     "m": [
-      "massette (typha latifolia)"
+      "massette"
     ],
     "on": [
       "ホ",
@@ -4052,7 +4036,7 @@ export const KANJI = [
       "sécheresse",
       "sécher",
       "dessécher",
-      "vider (verre)",
+      "vider",
       "cieux",
       "empereur"
     ],
@@ -4545,7 +4529,7 @@ export const KANJI = [
       "relâcher",
       "abaisser",
       "décompresser",
-      "lâche (noeud)",
+      "lâche",
       "modéré",
       "aise"
     ],
@@ -4565,7 +4549,6 @@ export const KANJI = [
     "m": [
       "boîte de conserve",
       "récipient",
-      "radical jarre (no. 121)"
     ],
     "on": [
       "カン"
@@ -4609,7 +4592,7 @@ export const KANJI = [
       "vue",
       "aspect",
       "apparence",
-      "condition (état)"
+      "condition"
     ],
     "on": [
       "カン"
@@ -4627,7 +4610,7 @@ export const KANJI = [
       "kan (= 3750 g)",
       "pénétrer",
       "cohérence",
-      "soutien (renfort)"
+      "soutien"
     ],
     "on": [
       "カン"
@@ -4773,7 +4756,7 @@ export const KANJI = [
     "m": [
       "rond",
       "arrondir",
-      "entier (mois)",
+      "entier",
       "pilule",
       "perfection",
       "suffixe des bateaux",
@@ -4962,7 +4945,7 @@ export const KANJI = [
       "appareil",
       "capacité",
       "outil",
-      "service (de table)"
+      "service"
     ],
     "on": [
       "キ"
@@ -4976,7 +4959,7 @@ export const KANJI = [
     "g": 5,
     "m": [
       "fondements",
-      "radical (chimie)",
+      "radical",
       "compteur de machines",
       "fondations"
     ],
@@ -4994,7 +4977,7 @@ export const KANJI = [
     "m": [
       "étrange",
       "étrangeté",
-      "curieux (bizarre)"
+      "curieux"
     ],
     "on": [
       "キ"
@@ -5552,7 +5535,7 @@ export const KANJI = [
       "habileté",
       "art",
       "technique",
-      "jeu (d'acteur)",
+      "jeu d'acteur",
       "prouesse",
       "métier",
       "vocation",
@@ -5758,7 +5741,7 @@ export const KANJI = [
     "k": "脚",
     "g": 8,
     "m": [
-      "pied (d'un objet)",
+      "pied",
       "patins",
       "train d'atterrissage"
     ],
@@ -6330,7 +6313,7 @@ export const KANJI = [
     "m": [
       "recevoir",
       "accepter",
-      "répondre (téléphone)",
+      "décrocher",
       "prendre",
       "obtenir"
     ],
@@ -6367,7 +6350,7 @@ export const KANJI = [
       "soumettre",
       "proposer",
       "accompagner",
-      "servir (plat)",
+      "servir",
       "pluriel cérémonieux"
     ],
     "on": [
@@ -6712,7 +6695,7 @@ export const KANJI = [
       "intérêt",
       "divertir",
       "ranimer",
-      "rétablir (fortune)",
+      "rétablir",
       "plaisir",
       "prospérer"
     ],
@@ -6798,7 +6781,6 @@ export const KANJI = [
     "g": 8,
     "m": [
       "regarder en l'air",
-      "dire (humble)",
       "dépendre",
       "chercher",
       "respecter",
@@ -7111,7 +7093,7 @@ export const KANJI = [
     "k": "菌",
     "g": 8,
     "m": [
-      "germe (microbien)",
+      "germe",
       "champignon",
       "bactérie"
     ],
@@ -7589,7 +7571,7 @@ export const KANJI = [
       "embobiner",
       "bobine",
       "faire tourner",
-      "tourner (pages)",
+      "tourner",
       "feuilleter",
       "parler de"
     ],
@@ -7634,7 +7616,7 @@ export const KANJI = [
     "m": [
       "jeune homme",
       "tu",
-      "suffixe de nom (-kun)"
+      "-kun"
     ],
     "on": [
       "クン"
@@ -7758,7 +7740,7 @@ export const KANJI = [
       "déclin",
       "sombrer",
       "ruiner",
-      "gîte (bateau)"
+      "gîte"
     ],
     "on": [
       "ケイ"
@@ -7953,9 +7935,9 @@ export const KANJI = [
     "g": 8,
     "m": [
       "afficher",
-      "hisser (drapeau)",
+      "hisser",
       "insertion",
-      "cité (ci-dessus)",
+      "cité",
       "faire paraître",
       "publier",
       "décrire"
@@ -7973,7 +7955,7 @@ export const KANJI = [
     "m": [
       "portatif",
       "porter en main",
-      "armé (d'un ..)",
+      "armé",
       "amener"
     ],
     "on": [
@@ -8061,10 +8043,10 @@ export const KANJI = [
     "m": [
       "sûtra",
       "longitude",
-      "passer (temps)",
+      "passer",
       "expiré",
       "expérimenter",
-      "chaîne (tissu)"
+      "chaîne"
     ],
     "on": [
       "ケイ",
@@ -8087,7 +8069,7 @@ export const KANJI = [
       "succession",
       "relais",
       "rapiécer",
-      "greffe (arbre)"
+      "greffe"
     ],
     "on": [
       "ケイ"
@@ -8245,7 +8227,7 @@ export const KANJI = [
     "g": 6,
     "m": [
       "théâtre",
-      "pièce (théâtre)"
+      "pièce"
     ],
     "on": [
       "ゲキ"
@@ -12445,8 +12427,7 @@ export const KANJI = [
       "enfant",
       "signe de la 1ère branche terrestre",
       "signe du Rat (zodiaque)",
-      "23 h à 01 h",
-      "Nord (0°)"
+      "23 h à 01 h"
     ],
     "on": [
       "シ",
@@ -34364,7 +34345,6 @@ export const KANJI = [
     "g": 7,
     "m": [
       "signe de la 11ème branche terrestre",
-      "signe du Chien (zodiaque)",
       "19 à 21 heures"
     ],
     "on": [
