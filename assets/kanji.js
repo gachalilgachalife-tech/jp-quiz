@@ -2119,7 +2119,7 @@ export const KANJI = [
     "g": 4,
     "m": [
       "cent millions",
-      "10**8"
+      "10⁸"
     ],
     "on": [
       "オク"
@@ -6330,7 +6330,7 @@ export const KANJI = [
     "g": 2,
     "m": [
       "capitale",
-      "10**16"
+      "10¹⁶"
     ],
     "on": [
       "キョウ",
@@ -6914,7 +6914,7 @@ export const KANJI = [
       "extrêmement",
       "le plus",
       "hautement",
-      "10**48"
+      "10⁴⁸"
     ],
     "on": [
       "キョク",
@@ -10136,7 +10136,7 @@ export const KANJI = [
       "rigole",
       "fossé",
       "égout",
-      "10**32"
+      "10³²"
     ],
     "on": [
       "コウ"
@@ -11476,7 +11476,7 @@ export const KANJI = [
       "monter dans",
       "placer",
       "étaler",
-      "10**44"
+      "10⁴⁴"
     ],
     "on": [
       "サイ"
@@ -18099,7 +18099,7 @@ export const KANJI = [
       "positif",
       "juste",
       "droit",
-      "10**40"
+      "10⁴⁰"
     ],
     "on": [
       "セイ",
@@ -22483,7 +22483,7 @@ export const KANJI = [
       "présage",
       "signe",
       "symptômes",
-      "10**12",
+      "10¹²",
       "1000 milliards"
     ],
     "on": [
