@@ -341,6 +341,13 @@
     const url = new URL(location.href);
     const pack = url.searchParams.get("pack") || "kana";
     const modeParam = url.searchParams.get("mode");
+    const savedMistakes = (() => {
+  try {
+    return JSON.parse(sessionStorage.getItem("jpQuizMistakes") || "[]");
+  } catch {
+    return [];
+  }
+})();
     const rankParam = url.searchParams.get("rank");
 
     const SETTINGS = {
@@ -407,6 +414,9 @@
       streak: 0,
       bestStreakThisSession: 0,
       sessionXp: 0,
+      mistakes: [],
+      reviewQueue: null,
+      reviewIndex: 0,
       lastMode: null,
       locked: false,
       correct: null,
@@ -508,17 +518,23 @@
 
     function updateChip() {
       const prettyPack = session.pack === "kanji" ? "KANJI" : "KANA";
-      const prettyMode = session.mode === "infini"
-        ? "Infini"
-        : (session.mode === "exam" ? "Examen" : "Normal");
-
-      modeChip.textContent = `${prettyPack} — ${prettyMode}`;
+      const prettyMode =
+  session.mode === "infini"
+    ? "Infini"
+    : session.mode === "exam"
+      ? "Examen"
+      : session.mode === "review"
+        ? "Révision"
+        : "Normal";
     }
 
     function updateHud(xpPreview = 0) {
       if (session.mode === "exam") {
         hudScore.textContent = `Score : ${session.good}/${SETTINGS.examQuestions}`;
         hudMini.textContent = `Question : ${session.asked}/${SETTINGS.examQuestions}`;
+        if (session.mode === "review") {
+  hudScore.textContent = `Réussites : ${session.good}`;
+  hudMini.textContent = `Erreur : ${session.asked}/${session.reviewQueue?.length || 0}`;
       } else if (session.mode === "normal") {
         hudScore.textContent = `Score : ${session.good}/${SETTINGS.normalQuestions}`;
         hudMini.textContent = `Question : ${session.asked}/${SETTINGS.normalQuestions}`;
@@ -690,15 +706,16 @@
 
       let gainedXp = 0;
 
-      if (session.mode !== "exam") {
-        const streakBonus = getSessionXpGain({
-          ...session,
-          good: 0
-        });
+      if (session.mode !== "exam" && session.mode !== "review") {
+  const streakBonus = getSessionXpGain({
+    ...session,
+    good: 0
+  });
 
-        gainedXp = session.sessionXp + streakBonus;
-        applyXpToLevel(app.progression, gainedXp, KANJI_DATA);
-      }
+  gainedXp = session.sessionXp + streakBonus;
+  applyXpToLevel(app.progression, gainedXp, KANJI_DATA);
+}
+
 
       let rankUpText = "";
 
@@ -737,15 +754,18 @@
       let endText = "";
 
       if (session.mode === "exam") {
-        const success = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
-        endText = success ? "Examen réussi" : "Examen raté";
+  const success = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
+  endText = success ? "Examen réussi" : "Examen raté";
 
-        if (rankUpText) {
-          endText += ` • ${rankUpText}`;
-        }
-      } else {
-        endText = `Session terminée • +${gainedXp} XP`;
-      }
+  if (rankUpText) {
+    endText += ` • ${rankUpText}`;
+  }
+} else if (session.mode === "review") {
+  endText = "Révision terminée";
+} else {
+  endText = `Session terminée • +${gainedXp} XP`;
+}
+
 
       promptEl.textContent = "Fin";
       hintEl.textContent = `Rang ${app.progression.currentRank} • ${progressText}`;
@@ -753,22 +773,71 @@
 
       hudScore.textContent = `Bonnes réponses : ${session.good}`;
       hudMini.textContent = `Meilleure streak : ${session.bestStreakThisSession || 0}`;
-      hudXP.textContent = session.mode === "exam" ? "XP +0" : `XP +${gainedXp}`;
+      hudXP.textContent =
+  (session.mode === "exam" || session.mode === "review")
+    ? "XP +0"
+    : `XP +${gainedXp}`;
+
       hudStreak.textContent = `Niveau ${app.progression.level}`;
 
-      footer.innerHTML = `
-        <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-          <a class="btn primary" href="./index.html">Retour menu</a>
-          <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
-        </div>
-      `;
-    }
+    let mistakesHtml = "";
+
+if (session.mistakes.length > 0) {
+  mistakesHtml = `
+    <div style="margin-top:18px; text-align:left;">
+      <h3 style="margin-bottom:12px;">Erreurs (${session.mistakes.length})</h3>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        ${session.mistakes.map(m => {
+          if (m.type === "kana") {
+            return `
+              <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
+                <div><strong>Question :</strong> ${m.prompt}</div>
+                <div><strong>Ta réponse :</strong> ${m.userAnswer || "—"}</div>
+                <div><strong>Bonne réponse :</strong> ${m.correctAnswer}</div>
+              </div>
+            `;
+          }
+
+          return `
+            <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
+              <div style="font-size:28px; font-weight:900; margin-bottom:6px;">${m.kanji}</div>
+              <div><strong>Ta réponse :</strong> ${m.userAnswer || "—"}</div>
+              <div><strong>Bonne réponse :</strong> ${m.correctAnswer}</div>
+              <div><strong>ON :</strong> ${m.on.length ? m.on.join(" / ") : "—"}</div>
+              <div><strong>KUN :</strong> ${m.kun.length ? m.kun.join(" / ") : "—"}</div>
+              <div><strong>Sens :</strong> ${m.meanings.length ? m.meanings.join(" • ") : "—"}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+if (session.mode !== "review") {
+  sessionStorage.setItem("jpQuizMistakes", JSON.stringify(session.mistakes));
+}
+
+footer.innerHTML = `
+  <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
+    ${mistakesHtml}
+    <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+      ${session.mistakes.length > 0 ? `<a class="btn primary" href="./quiz.html?pack=${session.pack}&mode=review">Réviser mes erreurs</a>` : ""}
+      <a class="btn secondary" href="./index.html">Retour menu</a>
+      <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
+    </div>
+  </div>
+`;
+
 
     function nextQuestion() {
       btnNext.style.display = "none";
       btnNext.disabled = true;
       hideCorrection();
 
+      if (session.mode === "review" && sessions.reviewIndex >= (session.reviewQueue?.length || 0)) {
+        return endSession();
+      }
       if (session.mode === "normal" && session.asked >= SETTINGS.normalQuestions) return endSession();
       if (session.mode === "exam" && session.asked >= SETTINGS.examQuestions) return endSession();
       if (session.mode === "infini" && session.good >= SETTINGS.infiniteGoal) return endSession();
@@ -782,10 +851,35 @@
       return askKanji();
     }
 
+      function buildReviewQueue() {
+        if (!Array.isArray(savedMistakes) || savedMistakes.length === 0) {
+          return [];
+        }
+
+        return [...savedMistakes];
+      ]
+        
     function askKana() {
       const type = chooseModePro(session);
       session.correct = null;
       session.correctionData = null;
+
+      if (session.mode === "review" && session.reviewQueue) {
+  const item = session.reviewQueue[session.reviewIndex++];
+
+  if (!item) return endSession();
+
+  session.correct = item.correctAnswer;
+  session.correctionData = null;
+
+  promptEl.textContent = item.prompt;
+  inputRow.style.display = "flex";
+  qcmRow.style.display = "none";
+  hintEl.textContent = "Corrige ton erreur puis appuie sur Terminé.";
+  romajiInput.focus();
+  return;
+}
+
 
       if (type === "hira_to_romaji") {
         const [char, romaji] = pickRandomEntry(HIRAGANA);
@@ -851,6 +945,62 @@
 
     function askKanji() {
       let item;
+
+      if (session.mode === "review" && session.reviewQueue) {
+  const item = session.reviewQueue[session.reviewIndex++];
+
+  if (!item) return endSession();
+
+  session.correct = item.correctAnswer;
+  session.correctionData = {
+    k: item.kanji,
+    on: item.on || [],
+    kun: item.kun || [],
+    m: item.meanings || []
+  };
+
+  promptEl.textContent = item.kanji;
+  inputRow.style.display = "none";
+  qcmRow.style.display = "grid";
+  hintEl.textContent = "Révision de tes erreurs.";
+
+  const meaningPool = KANJI_DATA
+    .flatMap(k => k.m)
+    .map(x => String(x).trim())
+    .filter(Boolean);
+
+  const distractors = [];
+  const forbidden = new Set((item.meanings || []).map(x => x.toLowerCase()));
+
+  while (distractors.length < 4 && meaningPool.length > 0) {
+    const cand = meaningPool[Math.floor(Math.random() * meaningPool.length)];
+    const key = cand.toLowerCase();
+
+    if (forbidden.has(key)) continue;
+    if (distractors.some(d => d.toLowerCase() === key)) continue;
+
+    distractors.push(cand);
+  }
+
+  const choices = [...distractors, item.correctAnswer];
+
+  for (let i = choices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [choices[i], choices[j]] = [choices[j], choices[i]];
+  }
+
+  qcmRow.innerHTML = "";
+
+  for (const c of choices) {
+    const b = document.createElement("button");
+    b.textContent = c;
+    b.className = "btn qcm-btn";
+    b.onclick = () => submit(c);
+    qcmRow.appendChild(b);
+  }
+
+  return;
+}
 
       if (session.mode === "exam" && session.examQueue) {
         item = session.examQueue[session.examIndex++];
@@ -930,19 +1080,44 @@
           session.streak
         );
 
-        if (session.mode !== "exam") {
-          if (session.pack === "kana") {
-            session.sessionXp += 2;
-          } else if (session.pack === "kanji" && session.correctionData) {
-            session.sessionXp += getXpForKanjiGrade(session.correctionData.g);
-          }
-        }
+    if (session.mode !== "exam" && session.mode !== "review") {
+      if (session.pack === "kana") {
+        session.sessionXp += 2;
+      } else if (session.pack === "kanji" && session.correctionData) {
+    session.sessionXp += getXpForKanjiGrade(session.correctionData.g || 1);
+    
+
 
         setFeedback(feedbackEl, "good", "Correct");
-      } else {
-        session.streak = 0;
-        setFeedback(feedbackEl, "bad", "Faux");
-      }
+     } else {
+  session.streak = 0;
+
+  } else {
+  session.streak = 0;
+
+  if (session.mode !== "review") {
+    if (session.pack === "kana") {
+      session.mistakes.push({
+        type: "kana",
+        prompt: promptEl.textContent,
+        userAnswer: value,
+        correctAnswer: session.correct
+      });
+    } else if (session.pack === "kanji" && session.correctionData) {
+      session.mistakes.push({
+        type: "kanji",
+        kanji: session.correctionData.k,
+        userAnswer: value,
+        correctAnswer: session.correct,
+        on: session.correctionData.on || [],
+        kun: session.correctionData.kun || [],
+        meanings: session.correctionData.m || []
+      });
+    }
+  }
+
+  setFeedback(feedbackEl, "bad", "Faux");
+}
 
       lock(true);
 
@@ -1003,6 +1178,11 @@
     });
 
     function startQuiz() {
+      if (session.mode === "review") {
+        session.reviewQueue = buildReviewQueue();
+        session.reviw.reviewIndex = 0;
+      }
+      
       if (session.pack === "kanji" && session.mode === "exam") {
         session.examQueue = buildExamQueue(session.rank);
         session.examIndex = 0;
