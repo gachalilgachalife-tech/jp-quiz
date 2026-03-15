@@ -967,6 +967,8 @@ flex-wrap:wrap;
    box-shadow: 0 0 0 2px rgba(96,165,250,0.9) !important;
 }
 
-
-
-
+#kanjiSelect [data-kmode="kanji_to_kana"]:disabled,
+#kanjiSelect [data-kmode="kana_to_kanji"]:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed;
+}
