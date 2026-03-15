@@ -179,10 +179,14 @@
         <div class="panel" style="margin-bottom:12px;">
           <div class="panel-title">KANA — Choix du mode</div>
           <div class="panel-body">
-            <div class="select-row">
-              <a class="btn secondary" href="./quiz.html?pack=kana&mode=normal">Normal (10)</a>
-              <a class="btn secondary" href="./quiz.html?pack=kana&mode=infini">Infini (objectif 100)</a>
-            </div>
+           <div class="select-row">
+  <button class="btn secondary" type="button" data-kmode="normal">Normal</button>
+  <button class="btn secondary" type="button" data-kmode="infini">Infini</button>
+  <button class="btn secondary" type="button" data-kmode="exam">Examen</button>
+  <button class="btn secondary" type="button" data-kmode="kanji_to_kana">Kanji → Kana</button>
+  <button class="btn secondary" type="button" data-kmode="kana_to_kanji">Kana → Kanji</button>
+</div>
+
             <p class="hint" style="margin:10px 0 0;">
               Kana : passage automatique à la question suivante.
             </p>
@@ -627,47 +631,58 @@
       }
 
       function refreshExamAvailability() {
-        const modeButtons = [...document.querySelectorAll("[data-kmode]")];
+  const modeButtons = [...document.querySelectorAll("[data-kmode]")];
+  const zenkaiUnlocked = isRankUnlocked(unlocked, "覚");
 
-        modeButtons.forEach(btn => {
-          const mode = btn.dataset.kmode;
+  modeButtons.forEach(btn => {
+    const mode = btn.dataset.kmode;
 
-          if (mode !== "exam") {
-            btn.disabled = !chosenRank;
-            return;
-          }
+    // Modes bonus : seulement si 覚 débloqué
+    if (mode === "kanji_to_kana" || mode === "kana_to_kanji") {
+      btn.disabled = !zenkaiUnlocked || !chosenRank;
+      return;
+    }
 
-          if (!chosenRank) {
-            btn.disabled = true;
-            return;
-          }
+    // Modes normaux
+    if (mode !== "exam") {
+      btn.disabled = !chosenRank;
+      return;
+    }
 
-          const olderExam = isOlderRankThanCurrent(chosenRank, currentRank);
-          const currentExam = isCurrentRank(chosenRank, currentRank);
+    // Mode examen
+    if (!chosenRank) {
+      btn.disabled = true;
+      return;
+    }
 
-          if (olderExam) {
-            btn.disabled = false;
-            return;
-          }
+    const olderExam = isOlderRankThanCurrent(chosenRank, currentRank);
+    const currentExam = isCurrentRank(chosenRank, currentRank);
 
-          if (currentExam) {
-            btn.disabled = !canTakeCurrentRankExam(progression, KANJI_DATA);
-            return;
-          }
+    if (olderExam) {
+      btn.disabled = false;
+      return;
+    }
 
-          btn.disabled = true;
-        });
+    if (currentExam) {
+      btn.disabled = !canTakeCurrentRankExam(progression, KANJI_DATA);
+      return;
+    }
 
-        if (chosenMode === "exam") {
-          const examBtn = document.querySelector('[data-kmode="exam"]');
-          if (examBtn?.disabled) {
-            chosenMode = null;
-            examBtn.classList.remove("selected");
-          }
-        }
+    btn.disabled = true;
+  });
 
-        btnStartKanji.disabled = !(chosenRank && chosenMode);
-      }
+  // Si le mode choisi devient interdit, on le retire
+  if (chosenMode) {
+    const activeBtn = document.querySelector(`[data-kmode="${chosenMode}"]`);
+    if (activeBtn?.disabled) {
+      chosenMode = null;
+      activeBtn.classList.remove("selected");
+    }
+  }
+
+  btnStartKanji.disabled = !(chosenRank && chosenMode);
+}
+
 
       document.querySelectorAll("[data-kmode]").forEach(btn => {
         btn.onclick = () => {
