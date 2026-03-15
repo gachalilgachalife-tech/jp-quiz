@@ -23,7 +23,20 @@ export function defaultState() {
       level: 1,
       bestStreak: 0
     },
-
+bonusProgression: {
+  kanji_kana: {
+    currentRank: "E",
+    unlockedRank: "E",
+    level: 1,
+    levelXp: 0
+  },
+  kanji_kana: {
+    currentRank: "E",
+    unlockedRank: "E",
+    level: 1,
+    levelXp: 0
+  }
+},
     stats: {
       byMode: {
         hira_to_romaji: { asked: 0, correct: 0, wrong: 0 },
