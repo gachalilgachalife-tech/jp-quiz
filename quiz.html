@@ -415,6 +415,7 @@
       bestStreakThisSession: 0,
       sessionXp: 0,
       mistakes: [],
+      reviewMistakes: [],
       reviewQueue: null,
       reviewIndex: 0,
       lastMode: null,
@@ -761,11 +762,14 @@
     endText += ` • ${rankUpText}`;
   }
 } else if (session.mode === "review") {
-  endText = "Révision terminée";
+  if (session.reviewMistakes.length === 0) {
+    endText = "Révision terminée • Toutes les erreurs sont corrigées 🎉";
+  } else {
+    endText = `Révision terminée • ${session.reviewMistakes.length} erreur(s) restante(s)`;
+  }
 } else {
   endText = `Session terminée • +${gainedXp} XP`;
 }
-
 
       promptEl.textContent = "Fin";
       hintEl.textContent = `Rang ${app.progression.currentRank} • ${progressText}`;
@@ -781,13 +785,17 @@
       hudStreak.textContent = `Niveau ${app.progression.level}`;
 
     let mistakesHtml = "";
+const displayedMistakes =
+  session.mode === "review" ? session.reviewMistakes : session.mistakes;
 
-if (session.mistakes.length > 0) {
+if (displayedMistakes.length > 0) {
   mistakesHtml = `
     <div style="margin-top:18px; text-align:left;">
-      <h3 style="margin-bottom:12px;">Erreurs (${session.mistakes.length})</h3>
+      <h3 style="margin-bottom:12px;">
+        ${session.mode === "review" ? `Erreurs restantes (${displayedMistakes.length})` : `Erreurs (${displayedMistakes.length})`}
+      </h3>
       <div style="display:flex; flex-direction:column; gap:12px;">
-        ${session.mistakes.map(m => {
+        ${displayedMistakes.map(m => {
           if (m.type === "kana") {
             return `
               <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
@@ -814,7 +822,10 @@ if (session.mistakes.length > 0) {
   `;
 }
 
-if (session.mode !== "review") {
+
+if (session.mode === "review") {
+  sessionStorage.setItem("jpQuizMistakes", JSON.stringify(session.reviewMistakes));
+} else {
   sessionStorage.setItem("jpQuizMistakes", JSON.stringify(session.mistakes));
 }
 
@@ -822,13 +833,20 @@ footer.innerHTML = `
   <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
     ${mistakesHtml}
     <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-      ${session.mistakes.length > 0 ? `<a class="btn primary" href="./quiz.html?pack=${session.pack}&mode=review">Réviser mes erreurs</a>` : ""}
+      ${
+        session.mode === "review"
+          ? (session.reviewMistakes.length > 0
+              ? `<a class="btn primary" href="./quiz.html?pack=${session.pack}&mode=review">Revoir encore</a>`
+              : "")
+          : (session.mistakes.length > 0
+              ? `<a class="btn primary" href="./quiz.html?pack=${session.pack}&mode=review">Réviser mes erreurs</a>`
+              : "")
+      }
       <a class="btn secondary" href="./index.html">Retour menu</a>
       <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
     </div>
   </div>
 `;
-
 
     function nextQuestion() {
       btnNext.style.display = "none";
@@ -1095,7 +1113,26 @@ footer.innerHTML = `
   } else {
   session.streak = 0;
 
-  if (session.mode !== "review") {
+  if (session.mode === "review") {
+    if (session.pack === "kana") {
+      session.reviewMistakes.push({
+        type: "kana",
+        prompt: promptEl.textContent,
+        userAnswer: value,
+        correctAnswer: session.correct
+      });
+    } else if (session.pack === "kanji" && session.correctionData) {
+      session.reviewMistakes.push({
+        type: "kanji",
+        kanji: session.correctionData.k,
+        userAnswer: value,
+        correctAnswer: session.correct,
+        on: session.correctionData.on || [],
+        kun: session.correctionData.kun || [],
+        meanings: session.correctionData.m || []
+      });
+    }
+  } else {
     if (session.pack === "kana") {
       session.mistakes.push({
         type: "kana",
@@ -1118,6 +1155,7 @@ footer.innerHTML = `
 
   setFeedback(feedbackEl, "bad", "Faux");
 }
+
 
       lock(true);
 
