@@ -836,24 +836,28 @@
         `;
       }
 
-      footer.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
-          ${mistakesHtml}
-          <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-            ${
+     footer.innerHTML = `
+  <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
+    ${mistakesHtml}
+    <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+      ${
+        session.pack === "kanji"
+          ? (
               session.mode === "review"
                 ? (session.reviewMistakes.length > 0
-                    ? `<a class="btn primary" href="./quiz.html?pack=${session.pack}&mode=review">Revoir encore</a>`
+                    ? `<a class="btn primary" href="./quiz.html?pack=kanji&mode=review">Revoir encore</a>`
                     : "")
                 : (session.mistakes.length > 0
-                    ? `<a class="btn primary" href="./quiz.html?pack=${session.pack}&mode=review">Réviser mes erreurs</a>`
+                    ? `<a class="btn primary" href="./quiz.html?pack=kanji&mode=review">Réviser mes erreurs</a>`
                     : "")
-            }
-            <a class="btn secondary" href="./index.html">Retour menu</a>
-            <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
-          </div>
-        </div>
-      `;
+            )
+          : ""
+      }
+      <a class="btn secondary" href="./index.html">Retour menu</a>
+      <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
+    </div>
+  </div>
+`;
     }
 
     function nextQuestion() {
@@ -1213,6 +1217,11 @@
     });
 
     function startQuiz() {
+      if (session.mode === "review" && session.pack !== "kanji") {
+  location.href = "./index.html";
+  return;
+}
+
       if (session.mode === "review") {
         session.reviewQueue = buildReviewQueue();
         session.reviewIndex = 0;
