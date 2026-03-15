@@ -153,6 +153,36 @@
       font-size: 18px;
       font-weight: 900;
     }
+
+    #kanjiSelect .btn.selected,
+    #kanjiSelect button.selected,
+    #kanjiSelect [data-kmode].selected,
+    #kanjiSelect [data-track].selected,
+    #rankList .selected {
+      background: linear-gradient(90deg, #3b82f6, #6366f1) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      box-shadow:
+        0 0 0 2px rgba(96, 165, 250, 0.95),
+        0 0 18px rgba(59, 130, 246, 0.35) !important;
+    }
+
+    #kanjiSelect [data-kmode="exam"] {
+      background: linear-gradient(90deg, #4f8cff, #6b6bff) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255,255,255,0.10) !important;
+      box-shadow:
+        0 0 0 1px rgba(99, 102, 241, 0.35),
+        0 0 14px rgba(79, 140, 255, 0.22) !important;
+    }
+
+    #kanjiSelect [data-kmode="exam"]:disabled,
+    #kanjiSelect [data-kmode="kanji_to_kana"]:disabled,
+    #kanjiSelect [data-kmode="kana_to_kanji"]:disabled {
+      opacity: 0.45 !important;
+      filter: grayscale(0.15);
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -174,17 +204,14 @@
   <main class="container">
     <section class="card quiz">
 
-      <!-- MENU KANA -->
       <div id="kanaSelect" class="select-wrap">
         <div class="panel" style="margin-bottom:12px;">
           <div class="panel-title">KANA — Choix du mode</div>
           <div class="panel-body">
-           <div class="select-row">
-  <button class="btn secondary" type="button" data-kmode="normal">Normal</button>
-  <button class="btn secondary" type="button" data-kmode="infini">Infini</button>
-  <button class="btn secondary" type="button" data-kmode="exam">Examen</button>
-</div>
-
+            <div class="select-row">
+              <a class="btn secondary" href="./quiz.html?pack=kana&mode=normal">Normal (10)</a>
+              <a class="btn secondary" href="./quiz.html?pack=kana&mode=infini">Infini (objectif 100)</a>
+            </div>
             <p class="hint" style="margin:10px 0 0;">
               Kana : passage automatique à la question suivante.
             </p>
@@ -198,8 +225,21 @@
         <div class="divider"></div>
       </div>
 
-      <!-- MENU KANJI -->
       <div id="kanjiSelect" class="select-wrap">
+        <div class="panel" style="margin-bottom:12px;">
+          <div class="panel-title">KANJI — Type d’entraînement</div>
+          <div class="panel-body">
+            <div class="select-row" id="trackList">
+              <button class="btn secondary" type="button" data-track="main">Significations</button>
+              <button class="btn secondary" type="button" data-track="kanji_kana">Kanji → Kana</button>
+              <button class="btn secondary" type="button" data-track="kana_kanji">Kana → Kanji</button>
+            </div>
+            <p class="hint" style="margin:10px 0 0;">
+              Les deux modes bonus sont débloqués seulement au rang 覚.
+            </p>
+          </div>
+        </div>
+
         <div class="panel" style="margin-bottom:12px;">
           <div class="panel-title">KANJI — Choix du rang</div>
           <div class="panel-body">
@@ -221,10 +261,8 @@
               <button class="btn secondary" type="button" data-kmode="normal">Normal</button>
               <button class="btn secondary" type="button" data-kmode="infini">Infini</button>
               <button class="btn secondary" type="button" data-kmode="exam">Examen</button>
-              <button class="btn secondary" type="button" data-kmode="kanji_to_kana">Kanji → Kana</button>
-              <button class="btn secondary" type="button" data-kmode="kana_to_kanji">Kana → Kanji</button>
             </div>
-            <p class="hint" style="margin:10px 0 0;">
+            <p id="modeHint" class="hint" style="margin:10px 0 0;">
               Normal / Infini : seulement le grade choisi. Examen : grade choisi + 10 des grades précédents.
             </p>
           </div>
@@ -238,7 +276,6 @@
         <div class="divider"></div>
       </div>
 
-      <!-- QUIZ -->
       <div class="hud" id="hud">
         <div class="hud-left">
           <div class="hud-score" id="hudScore">—</div>
@@ -349,6 +386,7 @@
     const pack = url.searchParams.get("pack") || "kana";
     const modeParam = url.searchParams.get("mode");
     const rankParam = url.searchParams.get("rank");
+    const trackParam = url.searchParams.get("track") || "main";
 
     const savedMistakes = (() => {
       try {
@@ -366,7 +404,26 @@
       autoNextMs: 650
     };
 
-    let app = loadState();
+    function ensureBonusProgression(state) {
+      state.bonusProgression = state.bonusProgression || {};
+      state.bonusProgression.kanji_kana = state.bonusProgression.kanji_kana || {
+        currentRank: "E",
+        unlockedRank: "E",
+        level: 1,
+        levelXp: 0,
+        bestStreak: 0
+      };
+      state.bonusProgression.kana_kanji = state.bonusProgression.kana_kanji || {
+        currentRank: "E",
+        unlockedRank: "E",
+        level: 1,
+        levelXp: 0,
+        bestStreak: 0
+      };
+      return state;
+    }
+
+    let app = ensureBonusProgression(loadState());
     applyTheme(app.ui?.theme ?? "dark");
 
     const modeChip = document.getElementById("modeChip");
@@ -375,8 +432,10 @@
 
     const kanaSelect = document.getElementById("kanaSelect");
     const kanjiSelect = document.getElementById("kanjiSelect");
+    const trackList = document.getElementById("trackList");
     const rankList = document.getElementById("rankList");
     const btnStartKanji = document.getElementById("btnStartKanji");
+    const modeHint = document.getElementById("modeHint");
 
     const rankProgressLabel = document.getElementById("rankProgressLabel");
     const rankProgressFill = document.getElementById("rankProgressFill");
@@ -417,6 +476,7 @@
       pack,
       mode: modeParam || "normal",
       rank: rankParam || "E",
+      track: trackParam,
       asked: 0,
       good: 0,
       streak: 0,
@@ -437,6 +497,20 @@
     function getGradeValue(rank) {
       const map = { E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, 覚: 7 };
       return map[rank] ?? 1;
+    }
+
+    function getTrackLabel(track) {
+      if (track === "kanji_kana") return "Kanji → Kana";
+      if (track === "kana_kanji") return "Kana → Kanji";
+      return "Significations";
+    }
+
+    function getActiveProgression(state, track) {
+      if (track === "kanji_kana" || track === "kana_kanji") {
+        ensureBonusProgression(state);
+        return state.bonusProgression[track];
+      }
+      return state.progression;
     }
 
     function getKanjiPoolForRank(rank) {
@@ -490,10 +564,47 @@
       };
     }
 
-    function refreshRankProgressUI() {
-      const progression = app.progression;
-      const info = getCurrentLevelProgressText(progression);
+    function katakanaToHiragana(str) {
+      return String(str || "").replace(/[\u30a1-\u30f6]/g, ch =>
+        String.fromCharCode(ch.charCodeAt(0) - 0x60)
+      );
+    }
 
+    function cleanReading(reading) {
+      return katakanaToHiragana(String(reading || ""))
+        .replace(/\./g, "")
+        .replace(/-/g, "")
+        .trim();
+    }
+
+    function getPrimaryReadingKana(item) {
+      if (item.kun?.length) {
+        const r = cleanReading(item.kun[0]);
+        if (r) return r;
+      }
+      if (item.on?.length) {
+        const r = cleanReading(item.on[0]);
+        if (r) return r;
+      }
+      return "";
+    }
+
+    function getTrackPool(rank) {
+      return getKanjiPoolForRank(rank).filter(item => {
+        if (session.track === "main") return item.m.length > 0;
+        return !!getPrimaryReadingKana(item);
+      });
+    }
+
+    function getExamPool(rank) {
+      return buildExamQueue(rank).filter(item => {
+        if (session.track === "main") return item.m.length > 0;
+        return !!getPrimaryReadingKana(item);
+      });
+    }
+
+    function refreshRankProgressUI(progression) {
+      const info = getCurrentLevelProgressText(progression);
       rankProgressLabel.textContent = `${info.label} • ${info.value}`;
       rankProgressFill.style.width = `${info.percent}%`;
     }
@@ -543,7 +654,8 @@
               ? "Révision"
               : "Normal";
 
-      modeChip.textContent = `${prettyPack} — ${prettyMode}`;
+      const extra = session.pack === "kanji" ? ` • ${getTrackLabel(session.track)}` : "";
+      modeChip.textContent = `${prettyPack} — ${prettyMode}${extra}`;
     }
 
     function updateHud(xpPreview = 0) {
@@ -593,96 +705,148 @@
       kanjiSelect.style.display = "block";
       hideQuizUI();
       modeChip.textContent = "KANJI — Menu";
-      refreshRankProgressUI();
       buildKanjiSelector();
     }
 
     function buildKanjiSelector() {
-      const progression = app.progression;
-      const unlocked = progression?.unlockedRank ?? "E";
-      const currentRank = progression?.currentRank ?? "E";
+      app = ensureBonusProgression(loadState());
 
+      const zenkaiUnlocked = isRankUnlocked(app.progression?.unlockedRank ?? "E", "覚");
+      let selectedTrack = (session.track === "kanji_kana" || session.track === "kana_kanji") ? session.track : "main";
       let chosenRank = null;
       let chosenMode = null;
 
-      rankList.innerHTML = "";
-
-      for (const r of RANKS) {
-        const ok = isRankUnlocked(unlocked, r);
-
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "btn secondary";
-        b.textContent = ok ? r : `${r} 🔒`;
-        b.disabled = !ok;
-        b.style.opacity = ok ? "1" : "0.45";
-
-        b.addEventListener("click", () => {
-          [...rankList.querySelectorAll("button")].forEach(x => {
-            x.classList.remove("selected");
-          });
-
-          b.classList.add("selected");
-          chosenRank = r;
-          refreshExamAvailability();
-        });
-
-        rankList.appendChild(b);
+      function refreshModeHint() {
+        if (selectedTrack === "main") {
+          modeHint.textContent = "Normal / Infini : seulement le grade choisi. Examen : grade choisi + 10 des grades précédents.";
+        } else {
+          modeHint.textContent = "Modes bonus 覚 : QCM lecture/kanji. Examen : progression séparée de E à 覚.";
+        }
       }
 
-      function refreshExamAvailability() {
-  const modeButtons = [...document.querySelectorAll("[data-kmode]")];
-  const zenkaiUnlocked = isRankUnlocked(unlocked, "覚");
+      function paintTrackButtons() {
+        [...trackList.querySelectorAll("[data-track]")].forEach(btn => {
+          btn.classList.remove("selected");
+          const track = btn.dataset.track;
 
-  modeButtons.forEach(btn => {
-    const mode = btn.dataset.kmode;
+          if (track === "kanji_kana" || track === "kana_kanji") {
+            btn.disabled = !zenkaiUnlocked;
+            btn.style.opacity = zenkaiUnlocked ? "1" : "0.45";
+          } else {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+          }
 
-    // Modes bonus : seulement si 覚 débloqué
-    if (mode === "kanji_to_kana" || mode === "kana_to_kanji") {
-      btn.disabled = !zenkaiUnlocked || !chosenRank;
-      return;
-    }
+          if (track === selectedTrack) {
+            btn.classList.add("selected");
+          }
+        });
+      }
 
-    // Modes normaux
-    if (mode !== "exam") {
-      btn.disabled = !chosenRank;
-      return;
-    }
+      function getMenuProgression() {
+        return getActiveProgression(app, selectedTrack);
+      }
 
-    // Mode examen
-    if (!chosenRank) {
-      btn.disabled = true;
-      return;
-    }
+      function rebuildRanks() {
+        const progression = getMenuProgression();
+        const unlocked = progression?.unlockedRank ?? "E";
+        const currentRank = progression?.currentRank ?? "E";
 
-    const olderExam = isOlderRankThanCurrent(chosenRank, currentRank);
-    const currentExam = isCurrentRank(chosenRank, currentRank);
+        rankList.innerHTML = "";
+        chosenRank = null;
+        btnStartKanji.disabled = true;
 
-    if (olderExam) {
-      btn.disabled = false;
-      return;
-    }
+        for (const r of RANKS) {
+          const ok = isRankUnlocked(unlocked, r);
 
-    if (currentExam) {
-      btn.disabled = !canTakeCurrentRankExam(progression, KANJI_DATA);
-      return;
-    }
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "btn secondary";
+          b.textContent = ok ? r : `${r} 🔒`;
+          b.disabled = !ok;
+          b.style.opacity = ok ? "1" : "0.45";
 
-    btn.disabled = true;
-  });
+          b.addEventListener("click", () => {
+            [...rankList.querySelectorAll("button")].forEach(x => {
+              x.classList.remove("selected");
+            });
 
-  // Si le mode choisi devient interdit, on le retire
-  if (chosenMode) {
-    const activeBtn = document.querySelector(`[data-kmode="${chosenMode}"]`);
-    if (activeBtn?.disabled) {
-      chosenMode = null;
-      activeBtn.classList.remove("selected");
-    }
-  }
+            b.classList.add("selected");
+            chosenRank = r;
+            refreshAvailability(currentRank, progression);
+          });
 
-  btnStartKanji.disabled = !(chosenRank && chosenMode);
-}
+          if (r === currentRank && ok) {
+            b.classList.add("selected");
+            chosenRank = r;
+          }
 
+          rankList.appendChild(b);
+        }
+
+        refreshRankProgressUI(progression);
+        refreshAvailability(currentRank, progression);
+      }
+
+      function refreshAvailability(currentRank, progression) {
+        const modeButtons = [...document.querySelectorAll("[data-kmode]")];
+
+        modeButtons.forEach(btn => {
+          const mode = btn.dataset.kmode;
+
+          if (!chosenRank) {
+            btn.disabled = true;
+            return;
+          }
+
+          if (mode !== "exam") {
+            btn.disabled = false;
+            return;
+          }
+
+          const olderExam = isOlderRankThanCurrent(chosenRank, currentRank);
+          const currentExam = isCurrentRank(chosenRank, currentRank);
+
+          if (olderExam) {
+            btn.disabled = false;
+            return;
+          }
+
+          if (currentExam) {
+            btn.disabled = !canTakeCurrentRankExam(progression, KANJI_DATA);
+            return;
+          }
+
+          btn.disabled = true;
+        });
+
+        if (chosenMode) {
+          const activeBtn = document.querySelector(`[data-kmode="${chosenMode}"]`);
+          if (activeBtn?.disabled) {
+            chosenMode = null;
+            activeBtn.classList.remove("selected");
+          }
+        }
+
+        btnStartKanji.disabled = !(chosenRank && chosenMode);
+      }
+
+      paintTrackButtons();
+      refreshModeHint();
+      rebuildRanks();
+
+      document.querySelectorAll("[data-track]").forEach(btn => {
+        btn.onclick = () => {
+          if (btn.disabled) return;
+
+          selectedTrack = btn.dataset.track;
+          chosenMode = null;
+          document.querySelectorAll("[data-kmode]").forEach(x => x.classList.remove("selected"));
+          paintTrackButtons();
+          refreshModeHint();
+          rebuildRanks();
+        };
+      });
 
       document.querySelectorAll("[data-kmode]").forEach(btn => {
         btn.onclick = () => {
@@ -699,38 +863,73 @@
       });
 
       btnStartKanji.onclick = () => {
-        const go = `./quiz.html?pack=kanji&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
+        const go = `./quiz.html?pack=kanji&track=${encodeURIComponent(selectedTrack)}&mode=${encodeURIComponent(chosenMode)}&rank=${encodeURIComponent(chosenRank)}`;
         location.href = go;
       };
+    }
 
-      refreshExamAvailability();
+    function buildResultCard(item) {
+      if (item.type === "kana") {
+        return `
+          <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
+            <div><strong>Question :</strong> ${item.prompt}</div>
+            <div><strong>Ta réponse :</strong> ${item.userAnswer || "—"}</div>
+            <div><strong>Bonne réponse :</strong> ${item.correctAnswer}</div>
+          </div>
+        `;
+      }
+
+      if (item.type === "kanji_to_kana") {
+        return `
+          <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
+            <div style="font-size:28px; font-weight:900; margin-bottom:6px;">${item.kanji}</div>
+            <div><strong>Ta réponse :</strong> ${item.userAnswer || "—"}</div>
+            <div><strong>Bonne réponse :</strong> ${item.correctAnswer}</div>
+          </div>
+        `;
+      }
+
+      if (item.type === "kana_to_kanji") {
+        return `
+          <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
+            <div style="font-size:22px; font-weight:900; margin-bottom:6px;">${item.prompt}</div>
+            <div><strong>Ta réponse :</strong> ${item.userAnswer || "—"}</div>
+            <div><strong>Bonne réponse :</strong> ${item.correctAnswer}</div>
+          </div>
+        `;
+      }
+
+      return `
+        <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
+          <div style="font-size:28px; font-weight:900; margin-bottom:6px;">${item.kanji}</div>
+          <div><strong>Ta réponse :</strong> ${item.userAnswer || "—"}</div>
+          <div><strong>Bonne réponse :</strong> ${item.correctAnswer}</div>
+          <div><strong>ON :</strong> ${item.on.length ? item.on.join(" / ") : "—"}</div>
+          <div><strong>KUN :</strong> ${item.kun.length ? item.kun.join(" / ") : "—"}</div>
+          <div><strong>Sens :</strong> ${item.meanings.length ? item.meanings.join(" • ") : "—"}</div>
+        </div>
+      `;
     }
 
     function endSession() {
-      app = loadState();
-      app.progression = app.progression || {
-        currentRank: "E",
-        unlockedRank: "E",
-        levelXp: 0,
-        level: 1,
-        bestStreak: 0
-      };
+      app = ensureBonusProgression(loadState());
 
-      if ((session.bestStreakThisSession || 0) > (app.progression.bestStreak || 0)) {
-        app.progression.bestStreak = session.bestStreakThisSession || 0;
-      }
+      const activeProgression = getActiveProgression(app, session.track);
+      activeProgression.bestStreak = Math.max(activeProgression.bestStreak || 0, session.bestStreakThisSession || 0);
 
       app.last = app.last || {
         normalScore: null,
         infiniteQuestionsFor100: null
       };
 
-      if (session.mode === "normal") {
-        app.last.normalScore = session.good;
-      }
+      if (session.track === "main") {
+        if (session.mode === "normal") {
+          app.last.normalScore = session.good;
+        }
 
-      if (session.mode === "infini") {
-        app.last.infiniteQuestionsFor100 = session.asked;
+        if (session.mode === "infini") {
+          app.last.infiniteQuestionsFor100 = session.asked;
+        }
       }
 
       let gainedXp = 0;
@@ -742,22 +941,22 @@
         });
 
         gainedXp = session.sessionXp + streakBonus;
-        applyXpToLevel(app.progression, gainedXp, KANJI_DATA);
+        applyXpToLevel(activeProgression, gainedXp, KANJI_DATA);
       }
 
       let rankUpText = "";
 
       if (session.mode === "exam" && session.pack === "kanji") {
         const success = (session.good / SETTINGS.examQuestions) >= SETTINGS.examPassRate;
-        const isCurrent = session.rank === app.progression.currentRank;
-        const allowed = canTakeCurrentRankExam(app.progression, KANJI_DATA);
+        const isCurrent = session.rank === activeProgression.currentRank;
+        const allowed = canTakeCurrentRankExam(activeProgression, KANJI_DATA);
 
         if (success && isCurrent && allowed) {
-          const next = getNextRank(app.progression.currentRank);
+          const next = getNextRank(activeProgression.currentRank);
           if (next) {
-            rankUp(app.progression);
-            rankUpText = `Nouveau rang : ${app.progression.currentRank}`;
-            showRankUpAnimation(app.progression.currentRank);
+            rankUp(activeProgression);
+            rankUpText = `Nouveau rang : ${activeProgression.currentRank}`;
+            showRankUpAnimation(activeProgression.currentRank);
           }
         }
       }
@@ -778,12 +977,12 @@
       btnNext.disabled = true;
 
       const levelCap = getLevelXpCap(
-        app.progression.currentRank,
-        app.progression.level,
+        activeProgression.currentRank,
+        activeProgression.level,
         KANJI_DATA
       );
 
-      const progressText = `Niveau ${app.progression.level} • ${app.progression.levelXp} / ${levelCap}`;
+      const progressText = `Niveau ${activeProgression.level} • ${activeProgression.levelXp} / ${levelCap}`;
 
       let endText = "";
 
@@ -805,13 +1004,13 @@
       }
 
       promptEl.textContent = "Fin";
-      hintEl.textContent = `Rang ${app.progression.currentRank} • ${progressText}`;
+      hintEl.textContent = `Rang ${activeProgression.currentRank} • ${progressText}`;
       setFeedback(feedbackEl, "", endText);
 
       hudScore.textContent = `Bonnes réponses : ${session.good}`;
       hudMini.textContent = `Meilleure streak : ${session.bestStreakThisSession || 0}`;
       hudXP.textContent = (session.mode === "exam" || session.mode === "review") ? "XP +0" : `XP +${gainedXp}`;
-      hudStreak.textContent = `Niveau ${app.progression.level}`;
+      hudStreak.textContent = `Niveau ${activeProgression.level}`;
 
       let mistakesHtml = "";
       const displayedMistakes =
@@ -824,55 +1023,34 @@
               ${session.mode === "review" ? `Erreurs restantes (${displayedMistakes.length})` : `Erreurs (${displayedMistakes.length})`}
             </h3>
             <div style="display:flex; flex-direction:column; gap:12px;">
-              ${displayedMistakes.map(m => {
-                if (m.type === "kana") {
-                  return `
-                    <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
-                      <div><strong>Question :</strong> ${m.prompt}</div>
-                      <div><strong>Ta réponse :</strong> ${m.userAnswer || "—"}</div>
-                      <div><strong>Bonne réponse :</strong> ${m.correctAnswer}</div>
-                    </div>
-                  `;
-                }
-
-                return `
-                  <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--card2);">
-                    <div style="font-size:28px; font-weight:900; margin-bottom:6px;">${m.kanji}</div>
-                    <div><strong>Ta réponse :</strong> ${m.userAnswer || "—"}</div>
-                    <div><strong>Bonne réponse :</strong> ${m.correctAnswer}</div>
-                    <div><strong>ON :</strong> ${m.on.length ? m.on.join(" / ") : "—"}</div>
-                    <div><strong>KUN :</strong> ${m.kun.length ? m.kun.join(" / ") : "—"}</div>
-                    <div><strong>Sens :</strong> ${m.meanings.length ? m.meanings.join(" • ") : "—"}</div>
-                  </div>
-                `;
-              }).join("")}
+              ${displayedMistakes.map(buildResultCard).join("")}
             </div>
           </div>
         `;
       }
 
-     footer.innerHTML = `
-  <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
-    ${mistakesHtml}
-    <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-      ${
-        session.pack === "kanji"
-          ? (
-              session.mode === "review"
-                ? (session.reviewMistakes.length > 0
-                    ? `<a class="btn primary" href="./quiz.html?pack=kanji&mode=review">Revoir encore</a>`
-                    : "")
-                : (session.mistakes.length > 0
-                    ? `<a class="btn primary" href="./quiz.html?pack=kanji&mode=review">Réviser mes erreurs</a>`
-                    : "")
-            )
-          : ""
-      }
-      <a class="btn secondary" href="./index.html">Retour menu</a>
-      <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
-    </div>
-  </div>
-`;
+      footer.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
+          ${mistakesHtml}
+          <div class="end-actions" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+            ${
+              session.pack === "kanji" && session.track === "main"
+                ? (
+                    session.mode === "review"
+                      ? (session.reviewMistakes.length > 0
+                          ? `<a class="btn primary" href="./quiz.html?pack=kanji&track=main&mode=review">Revoir encore</a>`
+                          : "")
+                      : (session.mistakes.length > 0
+                          ? `<a class="btn primary" href="./quiz.html?pack=kanji&track=main&mode=review">Réviser mes erreurs</a>`
+                          : "")
+                  )
+                : ""
+            }
+            <a class="btn secondary" href="./index.html">Retour menu</a>
+            <a class="btn secondary" href="${location.pathname}${location.search}">Recommencer</a>
+          </div>
+        </div>
+      `;
     }
 
     function nextQuestion() {
@@ -898,22 +1076,6 @@
     }
 
     function askKana() {
-      if (session.mode === "review" && session.reviewQueue) {
-        const item = session.reviewQueue[session.reviewIndex++];
-
-        if (!item) return endSession();
-
-        session.correct = item.correctAnswer;
-        session.correctionData = null;
-
-        promptEl.textContent = item.prompt;
-        inputRow.style.display = "flex";
-        qcmRow.style.display = "none";
-        hintEl.textContent = "Corrige ton erreur puis appuie sur Terminé.";
-        romajiInput.focus();
-        return;
-      }
-
       const type = chooseModePro(session);
       session.correct = null;
       session.correctionData = null;
@@ -980,7 +1142,7 @@
       }
     }
 
-    function askKanji() {
+    function askMainKanji() {
       if (session.mode === "review" && session.reviewQueue) {
         const item = session.reviewQueue[session.reviewIndex++];
 
@@ -1043,7 +1205,7 @@
       if (session.mode === "exam" && session.examQueue) {
         item = session.examQueue[session.examIndex++];
       } else {
-        const pool = getKanjiPoolForRank(session.rank);
+        const pool = getTrackPool(session.rank);
 
         if (!pool || pool.length === 0) {
           promptEl.textContent = "Erreur";
@@ -1057,8 +1219,6 @@
       if (!item) return endSession();
 
       const validMeanings = item.m.filter(Boolean);
-      if (validMeanings.length === 0) return askKanji();
-
       const correctMeaning = validMeanings[Math.floor(Math.random() * validMeanings.length)];
 
       session.correct = correctMeaning;
@@ -1105,10 +1265,125 @@
       }
     }
 
+    function askKanjiToKana() {
+      let item;
+
+      if (session.mode === "exam" && session.examQueue) {
+        item = session.examQueue[session.examIndex++];
+      } else {
+        const pool = getTrackPool(session.rank);
+        if (!pool || pool.length === 0) {
+          promptEl.textContent = "Erreur";
+          hintEl.textContent = "Aucun kanji trouvé pour ce rang.";
+          return;
+        }
+        item = pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      if (!item) return endSession();
+
+      const correctReading = getPrimaryReadingKana(item);
+      session.correct = correctReading;
+      session.correctionData = item;
+
+      promptEl.textContent = item.k;
+      inputRow.style.display = "none";
+      qcmRow.style.display = "grid";
+      hintEl.textContent = "Choisis la lecture en hiragana.";
+
+      const readingPool = [...new Set(KANJI_DATA.map(getPrimaryReadingKana).filter(Boolean))];
+      const distractors = [];
+      const forbidden = new Set([correctReading.toLowerCase()]);
+
+      while (distractors.length < 4 && readingPool.length > 0) {
+        const cand = readingPool[Math.floor(Math.random() * readingPool.length)];
+        const key = cand.toLowerCase();
+        if (forbidden.has(key)) continue;
+        if (distractors.some(d => d.toLowerCase() === key)) continue;
+        distractors.push(cand);
+      }
+
+      const choices = [...distractors, correctReading];
+      for (let i = choices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [choices[i], choices[j]] = [choices[j], choices[i]];
+      }
+
+      qcmRow.innerHTML = "";
+      for (const c of choices) {
+        const b = document.createElement("button");
+        b.textContent = c;
+        b.className = "btn qcm-btn";
+        b.onclick = () => submit(c);
+        qcmRow.appendChild(b);
+      }
+    }
+
+    function askKanaToKanji() {
+      let item;
+
+      if (session.mode === "exam" && session.examQueue) {
+        item = session.examQueue[session.examIndex++];
+      } else {
+        const pool = getTrackPool(session.rank);
+        if (!pool || pool.length === 0) {
+          promptEl.textContent = "Erreur";
+          hintEl.textContent = "Aucun kanji trouvé pour ce rang.";
+          return;
+        }
+        item = pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      if (!item) return endSession();
+
+      const correctReading = getPrimaryReadingKana(item);
+      session.correct = item.k;
+      session.correctionData = item;
+
+      promptEl.textContent = correctReading;
+      inputRow.style.display = "none";
+      qcmRow.style.display = "grid";
+      hintEl.textContent = "Choisis le bon kanji.";
+
+      const pool = getTrackPool(session.rank);
+      const distractors = [];
+      const forbidden = new Set([item.k]);
+
+      while (distractors.length < 4 && pool.length > 0) {
+        const cand = pool[Math.floor(Math.random() * pool.length)];
+        if (!cand?.k) continue;
+        if (forbidden.has(cand.k)) continue;
+        if (distractors.includes(cand.k)) continue;
+        distractors.push(cand.k);
+      }
+
+      const choices = [...distractors, item.k];
+      for (let i = choices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [choices[i], choices[j]] = [choices[j], choices[i]];
+      }
+
+      qcmRow.innerHTML = "";
+      for (const c of choices) {
+        const b = document.createElement("button");
+        b.textContent = c;
+        b.className = "btn qcm-btn";
+        b.onclick = () => submit(c);
+        qcmRow.appendChild(b);
+      }
+    }
+
+    function askKanji() {
+      if (session.track === "kanji_kana") return askKanjiToKana();
+      if (session.track === "kana_kanji") return askKanaToKanji();
+      return askMainKanji();
+    }
+
     function submit(value) {
       if (session.locked) return;
 
-      const ok = value === session.correct;
+      const normalizeAnswer = (v) => String(v ?? "").trim().toLowerCase();
+      const ok = normalizeAnswer(value) === normalizeAnswer(session.correct);
 
       if (ok) {
         session.good += 1;
@@ -1130,44 +1405,39 @@
       } else {
         session.streak = 0;
 
-        if (session.mode === "review") {
-          if (session.pack === "kana") {
-            session.reviewMistakes.push({
-              type: "kana",
-              prompt: promptEl.textContent,
-              userAnswer: value,
-              correctAnswer: session.correct
-            });
-          } else if (session.pack === "kanji" && session.correctionData) {
-            session.reviewMistakes.push({
-              type: "kanji",
-              kanji: session.correctionData.k,
-              userAnswer: value,
-              correctAnswer: session.correct,
-              on: session.correctionData.on || [],
-              kun: session.correctionData.kun || [],
-              meanings: session.correctionData.m || []
-            });
-          }
-        } else {
-          if (session.pack === "kana") {
-            session.mistakes.push({
-              type: "kana",
-              prompt: promptEl.textContent,
-              userAnswer: value,
-              correctAnswer: session.correct
-            });
-          } else if (session.pack === "kanji" && session.correctionData) {
-            session.mistakes.push({
-              type: "kanji",
-              kanji: session.correctionData.k,
-              userAnswer: value,
-              correctAnswer: session.correct,
-              on: session.correctionData.on || [],
-              kun: session.correctionData.kun || [],
-              meanings: session.correctionData.m || []
-            });
-          }
+        const targetList = session.mode === "review" ? session.reviewMistakes : session.mistakes;
+
+        if (session.pack === "kana") {
+          targetList.push({
+            type: "kana",
+            prompt: promptEl.textContent,
+            userAnswer: value,
+            correctAnswer: session.correct
+          });
+        } else if (session.track === "kanji_kana" && session.correctionData) {
+          targetList.push({
+            type: "kanji_to_kana",
+            kanji: session.correctionData.k,
+            userAnswer: value,
+            correctAnswer: session.correct
+          });
+        } else if (session.track === "kana_kanji" && session.correctionData) {
+          targetList.push({
+            type: "kana_to_kanji",
+            prompt: promptEl.textContent,
+            userAnswer: value,
+            correctAnswer: session.correct
+          });
+        } else if (session.pack === "kanji" && session.correctionData) {
+          targetList.push({
+            type: "kanji",
+            kanji: session.correctionData.k,
+            userAnswer: value,
+            correctAnswer: session.correct,
+            on: session.correctionData.on || [],
+            kun: session.correctionData.kun || [],
+            meanings: session.correctionData.m || []
+          });
         }
 
         setFeedback(feedbackEl, "bad", "Faux");
@@ -1175,7 +1445,7 @@
 
       lock(true);
 
-      if (!isKanjiPack()) {
+      if (session.pack === "kana") {
         setTimeout(() => {
           lock(false);
           nextQuestion();
@@ -1183,7 +1453,7 @@
         return;
       }
 
-      if (session.correctionData) {
+      if (session.track === "main" && session.correctionData) {
         correctionWrap.style.display = "flex";
         btnCorrection.disabled = false;
 
@@ -1198,7 +1468,7 @@
     }
 
     themeToggle?.addEventListener("click", () => {
-      const state = loadState();
+      const state = ensureBonusProgression(loadState());
       state.ui = state.ui || { theme: "dark" };
       state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
       saveState(state);
@@ -1211,7 +1481,7 @@
     btnStop?.addEventListener("click", () => location.href = "./index.html");
 
     btnCorrection?.addEventListener("click", () => {
-      if (!session.correctionData) return;
+      if (!session.correctionData || session.track !== "main") return;
       correctionPanel.classList.toggle("show");
     });
 
@@ -1232,18 +1502,23 @@
     });
 
     function startQuiz() {
-      if (session.mode === "review" && session.pack !== "kanji") {
-  location.href = "./index.html";
-  return;
-}
+      if (session.mode === "review" && (session.pack !== "kanji" || session.track !== "main")) {
+        location.href = "./index.html";
+        return;
+      }
 
       if (session.mode === "review") {
         session.reviewQueue = buildReviewQueue();
         session.reviewIndex = 0;
+
+        if (!session.reviewQueue.length) {
+          promptEl.textContent = "Aucune erreur";
+          hintEl.textContent = "Il n’y a rien à réviser.";
+        }
       }
 
       if (session.pack === "kanji" && session.mode === "exam") {
-        session.examQueue = buildExamQueue(session.rank);
+        session.examQueue = getExamPool(session.rank);
         session.examIndex = 0;
         SETTINGS.examQuestions = session.examQueue.length;
       }
@@ -1264,6 +1539,7 @@
       session.pack = pack;
       session.mode = modeParam || "normal";
       session.rank = rankParam || "E";
+      session.track = trackParam || "main";
       startQuiz();
     }
   </script>
