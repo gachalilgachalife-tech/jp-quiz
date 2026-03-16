@@ -3007,89 +3007,67 @@
 
  }
    }
-  <script type="module">
+ <script type="module">
+  // imports
 
-    function submit(value) {
-      
-      btnNext.style.display = "inline-flex";
-      btnNext.disabled = false;
-    }
+  // constantes
 
-    themeToggle?.addEventListener("click", () => {
-      const state = ensureBonusProgression(loadState());
-      state.ui = state.ui || { theme: "dark" };
-      state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
-      saveState(state);
-      applyTheme(state.ui.theme);
-      app = state;
-    });
+  // fonctions
+  function submit(value) {
+    ...
+    btnNext.style.display = "inline-flex";
+    btnNext.disabled = false;
+  }
 
-    fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
+  themeToggle?.addEventListener("click", () => {
+    const state = ensureBonusProgression(loadState());
+    state.ui = state.ui || { theme: "dark" };
+    state.ui.theme = state.ui.theme === "dark" ? "light" : "dark";
+    saveState(state);
+    applyTheme(state.ui.theme);
+    app = state;
+  });
 
-    btnStop?.addEventListener("click", () => location.href = "./index.html");
+  fullscreenBtn?.addEventListener("click", requestFullscreenToggle);
 
-    btnCorrection?.addEventListener("click", () => {
-      if (!session.correctionData || session.track !== "main") return;
-      correctionPanel.classList.toggle("show");
-    });
+  btnStop?.addEventListener("click", () => location.href = "./index.html");
 
-    btnNext?.addEventListener("click", () => {
-      btnNext.style.display = "none";
-      btnNext.disabled = true;
-      lock(false);
-      nextQuestion();
-    });
+  btnCorrection?.addEventListener("click", () => {
+    if (!session.correctionData || session.track !== "main") return;
+    correctionPanel.classList.toggle("show");
+  });
 
-    romajiInput?.addEventListener("keydown", (e) => {
-      capsIndicator.classList.toggle("on", e.getModifierState && e.getModifierState("CapsLock"));
-    });
+  btnNext?.addEventListener("click", () => {
+    btnNext.style.display = "none";
+    btnNext.disabled = true;
+    lock(false);
+    nextQuestion();
+  });
 
-    inputForm?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      submit(romajiInput.value.trim());
-    });
+  romajiInput?.addEventListener("keydown", (e) => {
+    capsIndicator.classList.toggle("on", e.getModifierState && e.getModifierState("CapsLock"));
+  });
 
-    function startQuiz() {
-      if (session.mode === "review" && (session.pack !== "kanji" || session.track !== "main")) {
-        location.href = "./index.html";
-        return;
-      }
+  inputForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(romajiInput.value.trim());
+  });
 
-      if (session.mode === "review") {
-        session.reviewQueue = buildReviewQueue();
-        session.reviewIndex = 0;
+  function startQuiz() {
+    ...
+  }
 
-        if (!session.reviewQueue.length) {
-          promptEl.textContent = "Aucune erreur";
-          hintEl.textContent = "Il n’y a rien à réviser.";
-        }
-      }
-
-      if (session.pack === "kanji" && session.mode === "exam") {
-        session.examQueue = getExamPool(session.rank);
-        session.examIndex = 0;
-        SETTINGS.examQuestions = session.examQueue.length;
-      }
-
-      kanaSelect.style.display = "none";
-      kanjiSelect.style.display = "none";
-      showQuizUI();
-      updateChip();
-      updateHud(0);
-      nextQuestion();
-    }
-
-    if (pack === "kana" && !modeParam) {
-      showKanaSelector();
-    } else if (pack === "kanji" && !modeParam) {
-      showKanjiSelector();
-    } else {
-      session.pack = pack;
-      session.mode = modeParam || "normal";
-      session.rank = rankParam || "E";
-      session.track = trackParam || "main";
-      startQuiz();
-    }
-  </script>
+  if (pack === "kana" && !modeParam) {
+    showKanaSelector();
+  } else if (pack === "kanji" && !modeParam) {
+    showKanjiSelector();
+  } else {
+    session.pack = pack;
+    session.mode = modeParam || "normal";
+    session.rank = rankParam || "E";
+    session.track = trackParam || "main";
+    startQuiz();
+  }
+</script>
 </body>
 </html>
